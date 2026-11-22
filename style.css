@@ -1659,3 +1659,6 @@ details.sj-hol > summary > h4 small { font: 12px var(--serif); letter-spacing: 0
 
 /* d20 жизни: тумблер случайных проверок в шапке окна */
 .sj-wh .sj-fatetgl { margin-left: auto; margin-right: 8px; }
+
+/* значок d20 в тексте кнопок и плашек */
+.sj-d20 { width: 1.1em; height: 1.1em; vertical-align: -0.18em; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }

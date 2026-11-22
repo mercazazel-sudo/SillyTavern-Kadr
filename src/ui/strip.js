@@ -5,6 +5,7 @@
 import { report } from '../guard.js';
 import { esc, waitFor } from './dom.js';
 import { heatPending, modesOf } from '../core/fate.js';
+import { D20_SVG } from './d20-icon.js';
 import { themeFor } from './theme.js';
 import { rollCheckWithDice } from './dice-roll.js';
 import { personaPhoto as personaPhotoByName } from './photo.js';
@@ -49,7 +50,7 @@ export async function startStrip(deps) {
     const fmMode = info.fate?.mode ? (info.fate.mode === 'intimacy' ? { icon: '💕', ru: 'Интим' } : modesOf(info.fate.set).find(m => m.id === info.fate.mode)) : null;
     const fm = fmMode ? `${fmMode.icon} ${fmMode.ru}` : '';
     const fatePending = Boolean(info.fate && ((info.fate.event && !info.fate.event.sent) || heatPending(info.fate.heat)));
-    const mode = fm || fatePending ? `<span class="sj-md${fatePending ? ' pend' : ''}" role="button" tabindex="0" data-fate="1" title="d20 жизни${fatePending ? ': подсказка ждёт следующего ответа' : ''}">${fm ? esc(fm) : '⚄'}${fatePending && fm ? ' •' : ''}</span>` : '';
+    const mode = fm || fatePending ? `<span class="sj-md${fatePending ? ' pend' : ''}" role="button" tabindex="0" data-fate="1" title="d20 жизни${fatePending ? ': подсказка ждёт следующего ответа' : ''}">${fm ? esc(fm) : D20_SVG}${fatePending && fm ? ' •' : ''}</span>` : '';
     const pmis = info.personaMismatch ? `<span class="sj-pw" role="button" tabindex="0" data-pw="1" title="В Таверне персона «${esc(info.personaMismatch.tavern)}», а в чате привязана «${esc(info.personaMismatch.bound)}». Нажмите, чтобы выбрать.">⚠ персона</span>` : '';
     // фото персоны из Таверны: выбранная персона в списке персон, иначе аватар последнего её сообщения
     const personaPhoto = () => {
@@ -76,7 +77,7 @@ export async function startStrip(deps) {
     const chk = intimate ? null : info.fate?.check;               // в интимной сцене d20 не показывается
     const OUT = { dodge: ['уворот', 'ok'], 'crit-dodge': ['идеальный уворот', 'ok'], hit: ['ранен', 'bad'], 'crit-hit': ['тяжело ранен', 'bad'], success: ['удалось', 'ok'], 'crit-success': ['блестяще', 'ok'], fail: ['не удалось', 'bad'], 'crit-fail': ['провал', 'bad'] };
     const dice = chk && !chk.roll ? `<span class="sj-dice" role="button" tabindex="0" data-dice="1" title="${chk.kind === 'skill' ? `Бросить d20: меньше ${chk.dc} значит не вышло, не меньше значит удалось. ${esc(chk.label)}` : `Бросить d20: меньше ${chk.dc} значит ранят, не меньше значит увернулись; 1 это тяжёлая рана. ${esc(chk.label)}`}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/><path d="M12 7.2l4.6 8H7.4z"/><path d="M12 2.5v4.7M20.2 7.25L12 7.2M3.8 7.25L12 7.2M20.2 7.25l-3.6 7.95M3.8 7.25l3.6 7.95M20.2 16.75l-3.6-1.55M3.8 16.75l3.6-1.55M12 21.5l4.6-6.3M12 21.5l-4.6-6.3"/></svg><b>${chk.dc}</b>${chk.mode === 'advantage' ? '<i title="преимущество">▲</i>' : chk.mode === 'disadvantage' ? '<i title="помеха">▼</i>' : ''}<span>бросить куб</span></span>`
-      : chk?.roll ? `<span class="sj-dres ${OUT[chk.roll.outcome][1]}" title="${esc(chk.label)}: сложность ${chk.dc}, выпало ${chk.roll.roll}${chk.roll.dice.length > 1 ? ` (${chk.roll.dice.join(', ')})` : ''}">🎲 ${chk.roll.roll} · ${OUT[chk.roll.outcome][0]}</span>` : '';
+      : chk?.roll ? `<span class="sj-dres ${OUT[chk.roll.outcome][1]}" title="${esc(chk.label)}: сложность ${chk.dc}, выпало ${chk.roll.roll}${chk.roll.dice.length > 1 ? ` (${chk.roll.dice.join(', ')})` : ''}">${D20_SVG} ${chk.roll.roll} · ${OUT[chk.roll.outcome][0]}</span>` : '';
     const html = `<span class="sj-t">${formatTime(time.minutes)}</span><span class="sj-part" data-p="${part}">${part}</span>
       <span class="sj-vs"></span><span class="sj-d">${dayBadge}${esc(date.name)}<span class="sj-sub"> · ${date.year} ${esc(date.era)}</span>${holiday}</span>${weather}
       <span class="sj-vs"></span><span class="sj-place${here ? '' : ' sj-none'}">${here ? esc(here) : 'место не задано'}</span>${avatars}

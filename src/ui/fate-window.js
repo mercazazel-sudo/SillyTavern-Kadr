@@ -4,6 +4,7 @@
  * Одноразовое уходит рассказчику с ближайшим ответом. Читает shared.scene.get(), правки идут через сервис.
  */
 import { esc } from './dom.js';
+import { D20_SVG } from './d20-icon.js';
 import { createShell } from './shell.js';
 import { MODE_SETS, SET_IDS, modesOf, NUDGES, HEAT, HEAT_IDS, HEAT_NUDGES, HEAT_ACTS, HEAT_NOTE_RU, CHECK_MODE_RU, OUTCOME_RU } from '../core/fate.js';
 import { ZONES } from '../core/body.js';
@@ -42,7 +43,7 @@ export function startFateWindow(deps) {
     }
     const mode = modesOf(info.fate.set).find(m => m.id === info.fate.mode);
     return `<div class="sj-lbl" style="margin-top:16px">Случайное событие</div>
-      <div class="sj-add" style="margin:0 0 8px"><button class="sj-btn sj-pri" data-act="roll">⚄ Случайное событие</button></div>
+      <div class="sj-add" style="margin:0 0 8px"><button class="sj-btn sj-pri" data-act="roll">${D20_SVG} Случайное событие</button></div>
       <div class="sj-sub" style="margin-bottom:6px">Таблица: ${mode ? esc(mode.ru) : 'общая'}. Напряжение сейчас: ${esc(info.tension?.ru ?? 'не отслеживается')}; чем выше, тем чаще опасность. Событие уйдёт рассказчику одним предложением и не повторится.</div>${body}`;
   }
 
@@ -52,7 +53,7 @@ export function startFateWindow(deps) {
     const kindRu = c => (c.kind === 'skill' ? 'действие' : 'уворот');
     const state = !c ? '<div class="sj-none">Проверки нет. Рассказчик назначит её сам, когда исход зависит от удачи (уворот, обман, скрытность и другое), или назначьте вручную. В интимной сцене проверки не назначаются.</div>'
       : c.roll ? `<div class="sj-ev"><div class="t">${esc(c.label)} (${kindRu(c)}): сложность ${c.dc}, ${esc(CHECK_MODE_RU[c.mode])}</div><div class="sj-sub">Выпало ${c.roll.roll}${c.roll.dice.length > 1 ? ` (кости ${c.roll.dice.join(' и ')})` : ''}: <b>${esc(OUTCOME_RU[c.roll.outcome])}</b>. Результат уйдёт рассказчику с ближайшим ответом.</div><button class="sj-btn" data-act="chkclear" style="margin-top:6px">Убрать</button></div>`
-        : `<div class="sj-ev"><div class="t">${esc(c.label)} (${kindRu(c)}): сложность ${c.dc}, ${esc(CHECK_MODE_RU[c.mode])}</div><div class="sj-sub">${hint(c)}</div><div class="sj-add" style="margin:8px 0 0"><button class="sj-btn sj-pri" data-act="chkroll">🎲 Бросить куб</button><button class="sj-btn" data-act="chkclear">Убрать</button></div></div>`;
+        : `<div class="sj-ev"><div class="t">${esc(c.label)} (${kindRu(c)}): сложность ${c.dc}, ${esc(CHECK_MODE_RU[c.mode])}</div><div class="sj-sub">${hint(c)}</div><div class="sj-add" style="margin:8px 0 0"><button class="sj-btn sj-pri" data-act="chkroll">${D20_SVG} Бросить куб</button><button class="sj-btn" data-act="chkclear">Убрать</button></div></div>`;
     return `<div class="sj-lbl" style="margin-top:16px">Проверка d20 для персоны</div>${state}
       <div class="sj-add"><input data-chklabel placeholder="что проверяем: удар клинка, обман стражника, скрытность…" aria-label="Что"><select data-chkkind aria-label="Вид" style="width:auto"><option value="dodge">уворот (при провале рана)</option><option value="skill">действие (обман, скрытность…)</option></select><input data-chkdc type="number" min="1" max="20" value="12" aria-label="Сложность" style="width:70px"><select data-chkmode aria-label="Режим" style="width:auto">${['normal', 'advantage', 'disadvantage'].map(m => `<option value="${m}">${esc(CHECK_MODE_RU[m])}</option>`).join('')}</select><button class="sj-btn" data-act="chkassign">Назначить</button></div>`;
   }
