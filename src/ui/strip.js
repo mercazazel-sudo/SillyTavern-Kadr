@@ -28,7 +28,7 @@ export async function startStrip(deps) {
   strip.setAttribute('aria-label', 'Открыть окно «Обстановка»');
   host.insertBefore(strip, send);   // сразу над рамкой поля ввода, под плашками других расширений
 
-  const shade = createShade({ strip, shared });
+  const shade = createShade({ strip, shared, settings });
   const stopMobile = onMobileChange(on => { if (on) strip.dataset.mobile = '1'; else { delete strip.dataset.mobile; shade.close(); } });
   let lastHtml = '';
   function render(info = shared.scene?.get()) {

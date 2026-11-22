@@ -6,6 +6,9 @@ export const KEY = 'sceneJournal';
 export const DEFAULTS = Object.freeze({
   enabled: true,
   strip: true,            // строка сцены у поля ввода
+  hub: true,              // пульт разделов (на телефоне кнопка «К»)
+  showJournal: true,      // пункт «Журнал» в меню разделов
+  showMap: true,          // пункт «Карта» в меню разделов
   calendar: 'harptos',    // календарь для новых чатов
   setupOff: false,        // «Больше не показывать»: мастер настройки сам не открывается (по умолчанию открывается в каждом новом чате)
   themeColor: '#c8a24a',  // «свой цвет» в выборе цвета окон (работает, когда theme = 'custom')

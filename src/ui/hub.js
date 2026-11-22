@@ -93,6 +93,9 @@ export function startHub(deps) {
     root.hidden = !(settings.enabled && settings.hub !== false && info?.hasChat);
     // цвета пульта как у окон: по миру чата или по выбранной палитре (смена цвета в настройках находит его по data-world)
     syncColors();
+    // разделы, которые человек отключил в настройках, пропадают из меню
+    root.querySelector('[data-open="openJournal"]')?.classList.toggle('sj-off', settings.showJournal === false);
+    root.querySelector('[data-open="openMap"]')?.classList.toggle('sj-off', settings.showMap === false);
     if (info?.state?.calendar) { root.dataset.world = info.state.calendar; root.dataset.cal = themeFor(info.state.calendar); }
   };
   const unsubscribe = shared.scene?.subscribe(refresh);

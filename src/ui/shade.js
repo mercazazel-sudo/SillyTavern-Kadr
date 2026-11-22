@@ -7,6 +7,7 @@ import { esc } from './dom.js';
 import { formatTime, partOfDay, parseDuration } from '../core/clock.js';
 import { describeWeather } from '../core/weather.js';
 export { isMobileView } from './mobile.js';
+import { FEATURES } from '../core/features.js';
 
 const PART_ICON = Object.freeze({ ночь: '🌙', утро: '🌅', день: '☀️', вечер: '🌇' });
 export const partIcon = part => PART_ICON[part] ?? '☀️';
@@ -18,7 +19,12 @@ export function shortDate(name) {
 }
 const UNITS = [['m', 'мин'], ['h', 'ч'], ['d', 'дн']];
 
-export function createShade({ strip, shared }) {
+const MENU = [
+  ['openState', 'Состояние'], ['openJournal', 'Журнал', 'showJournal'], ['openChronicle', 'Архивариус'], ['openMap', 'Карта', 'showMap'],
+  ['openRelations', 'Отношения'], ['openFate', 'd20 жизни', 'fate'], ['openCalendar', 'Календарь'], ['openCards', 'Анкеты'],
+];
+
+export function createShade({ strip, shared, settings = {} }) {
   const root = document.createElement('div');
   root.className = 'sj-shade-root';
   root.hidden = true;
@@ -74,7 +80,8 @@ export function createShade({ strip, shared }) {
           : '<div class="sj-sh-none" style="padding-top:6px">Никого не отмечено</div>'}
         <button type="button" class="sj-sh-state" data-state>Состояние</button>
       </div>
-      <button type="button" class="sj-sh-full" data-scene>Окно «Обстановка»</button>`;
+      ${settings.hub === false ? `<div class="sj-sh-menu">${MENU.filter(([, , flag]) => flag !== 'fate' ? (!flag || settings[flag] !== false) : FEATURES.fate).map(([open, ru]) => `<button type="button" data-sopen="${open}">${ru}</button>`).join('')}</div>` : ''}
+      <div class="sj-sh-row2"><button type="button" class="sj-sh-full" data-scene>Обстановка</button><button type="button" class="sj-sh-full" data-sopen="openSettings">Настройки</button></div>`;
   }
 
   function goForward() {
@@ -92,6 +99,8 @@ export function createShade({ strip, shared }) {
     const av = t.closest('[data-av]');
     if (av) { close(); return shared.ui?.openState?.(av.dataset.av); }
     if (t.closest('[data-state]')) { close(); return shared.ui?.openState?.(); }
+    const op = t.closest('[data-sopen]');
+    if (op) { close(); return shared.ui?.[op.dataset.sopen]?.(); }
     if (t.closest('[data-scene]')) { close(); return shared.ui?.openScene?.(); }
   };
   const onKey = event => {
