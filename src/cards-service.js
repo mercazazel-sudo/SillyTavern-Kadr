@@ -378,6 +378,34 @@ export function startCards(deps) {
     if (!data?.entries) throw new Error(`Лорбук «${name}» не открылся.`);
     return Object.values(data.entries);
   }
+  /** Отдельные записи лорбука становятся карточками людей: picks = [{ uid, name, tier }]. Полное название записи уходит в псевдонимы. */
+  async function importEntries(book, picks) {
+    const entries = await loadEntries(book);
+    const byUid = new Map(entries.map(e => [String(e.uid), e]));
+    const found = [];
+    for (const p of picks) {
+      const e = byUid.get(String(p.uid));
+      if (!e) continue;
+      const card = cardFromWholeBook([e], book, p.name);
+      if (!card.sections.length) continue;
+      card.tier = p.tier === 'main' ? 'main' : 'minor';
+      const full = String(e.comment ?? '').trim();
+      // «Имя — Раздел»: раздел берётся из названия записи; запись без раздела становится «Описанием»
+      const secTitle = full.split(/\s[-–—:]\s/).slice(1).join(' — ').replace(/^[\s—–-]+/, '').trim();
+      card.sections[0].title = (secTitle || 'Описание').slice(0, 80);
+      card.sections[0].kind = secTitle ? kindOfTitle(secTitle) : 'basic';
+      // псевдоним: имя в скобках («Vestor (Гортэш)» даёт «Гортэш»); запись без раздела и скобок: её полное название
+      const paren = /\(([^)]{2,60})\)/.exec(full)?.[1]?.trim();
+      if (paren && !sameName(paren, card.name)) card.aliases.push(paren);
+      else if (!secTitle && full && !sameName(full, card.name)) card.aliases.push(full.slice(0, 80));
+      found.push(card);
+    }
+    let result = { created: 0, updated: 0 };
+    mutateLib(lib => { result = mergeFound(lib, found); });
+    note = `Из «${book}»: новых карточек ${result.created}, обновлено ${result.updated}.`;
+    notify();
+    return result;
+  }
   /** Лорбук целиком об одном персонаже: все записи становятся разделами одной карточки. */
   async function importBookAsOne(name, cardName = '') {
     const card = cardFromWholeBook(await loadEntries(name), name, cardName || name);
@@ -525,7 +553,7 @@ export function startCards(deps) {
     /** Лорбуки, привязанные к этому чату и персонажу (для других служб: секреты и т.п.). null: ограничение снято в настройках, можно любые. */
     uploadImage,
     boundBooks: async () => (onlyBound() ? [...(await refreshBound())] : null),
-    get, bookNames, previewBook, importBook, importBookAsOne, importAll, reloadAll, previewMinor, importMinor, addCard, removeCard, mergeCards, updateCard, setSection, addSection, removeSection, setImage,
+    get, bookNames, loadEntries, importEntries, previewBook, importBook, importBookAsOne, importAll, reloadAll, previewMinor, importMinor, addCard, removeCard, mergeCards, updateCard, setSection, addSection, removeSection, setImage,
     translateCard, translatePlan, stopTranslation, setRu, clearRu,
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };

@@ -56,7 +56,9 @@ export function createShade({ strip, shared, settings = {} }) {
     const { date, state } = info;
     const place = state.place ? state.place.split('›').map(s => s.trim()).filter(Boolean).join(' › ') : '';
     const people = faces();
+    const tri = shared.triage?.get().pending[0];
     panel.innerHTML = `
+      ${tri ? `<div class="sj-sh-banner"><div class="tx"><b>Лорбук «${esc(tri.book)}»</b><small>новые записи: ${tri.fresh}. Разобрать по людям и местам?</small></div><button type="button" data-tri="open" data-book="${esc(tri.book)}">Разобрать</button><button type="button" data-tri="later" data-book="${esc(tri.book)}" aria-label="Позже">✕</button></div>` : ''}
       <div class="sj-sh-card">
         <div class="sj-sh-big"><b>${formatTime(info.time.minutes)}</b><span>${partIcon(part)} ${esc(part)}</span>${date.storyDay != null ? `<i class="sj-sh-dn">Д${date.storyDay}</i>` : ''}</div>
         <div class="sj-sh-grid">
@@ -92,6 +94,8 @@ export function createShade({ strip, shared, settings = {} }) {
     const av = t.closest('[data-av]');
     if (av) { close(); return shared.ui?.openState?.(av.dataset.av); }
     if (t.closest('[data-state]')) { close(); return shared.ui?.openState?.(); }
+    const tr = t.closest('[data-tri]');
+    if (tr) { if (tr.dataset.tri === 'later') { shared.triage?.snooze(tr.dataset.book); return; } close(); return shared.ui?.openTriage?.(tr.dataset.book); }
     const op = t.closest('[data-sopen]');
     if (op) { close(); return shared.ui?.[op.dataset.sopen]?.(); }
     if (t.closest('[data-scene]')) { close(); return shared.ui?.openScene?.(); }
@@ -102,12 +106,13 @@ export function createShade({ strip, shared, settings = {} }) {
   };
   root.addEventListener('click', onClick);
   document.addEventListener('keydown', onKey);
+  const unTriage = shared.triage?.subscribe(() => { if (isOpen()) { place(); render(); } });
   const unsubscribe = shared.scene?.subscribe(() => { if (isOpen()) { place(); render(); } });
 
   return {
     isOpen,
     toggle() { if (isOpen()) return close(); render(); place(); root.hidden = false; strip.classList.add('sj-shade-on'); },
     close,
-    destroy() { unsubscribe?.(); root.removeEventListener('click', onClick); document.removeEventListener('keydown', onKey); root.remove(); },
+    destroy() { unsubscribe?.(); unTriage?.(); root.removeEventListener('click', onClick); document.removeEventListener('keydown', onKey); root.remove(); },
   };
 }

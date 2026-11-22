@@ -162,7 +162,7 @@ export function startSetupWindow(deps) {
     const body = step === 0 ? personaStep(info) : step === 1 ? worldStep(info) : step === 2 ? booksStep() : doneStep();
     const intro = step === 0 ? '<p class="sj-su-hello">Привет! Давай настроим расширение, чтобы рассказчик получал актуальные данные!</p>' : '';
     const buttons = last
-      ? '<button class="sj-btn sj-pri" data-act="close">Закрыть</button><button class="sj-btn" data-act="cards">Открыть «Анкеты»</button>'
+      ? '<button class="sj-btn sj-pri" data-act="close">Закрыть</button><button class="sj-btn" data-act="cards">Открыть «Анкеты»</button><button class="sj-btn" data-act="triage">Разобрать лорбук</button>'
       : `${step > 0 ? '<button class="sj-btn" data-act="back">← Назад</button>' : ''}<button class="sj-btn sj-pri" data-act="next"${busy ? ' disabled' : ''}>${step === STEPS.length - 1 ? 'Готово' : 'Дальше →'}</button><button class="sj-btn" data-act="skip" title="Пропустить этот шаг, ничего не меняя">Пропустить шаг</button>`;
     win.innerHTML = `<div class="sj-wh"><h2>Первая настройка</h2><span class="sj-sub">Кадр</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
       <div class="sj-su-body">${intro}${stepper}${body}${note ? `<p class="sj-sub" style="color:#d98a4a">${esc(note)}</p>` : ''}</div>
@@ -278,6 +278,7 @@ export function startSetupWindow(deps) {
     if (act === 'skip') { step += 1; note = ''; if (step === STEPS.length) markSeen(ctx().chatId); return render(); }
     if (act === 'next') return void next();
     if (act === 'cards') { shell.close(); shared.ui?.openCards?.(); }
+    if (act === 'triage') { shell.close(); shared.ui?.openTriage?.(); }
   };
   win.addEventListener('change', onChange);
   win.addEventListener('click', onClick);

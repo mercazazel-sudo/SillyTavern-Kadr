@@ -68,6 +68,7 @@ export function startCardsWindow(deps) {
       ${tier === 'main'
         ? '<button class="sj-btn sj-pri" data-act="importall" style="width:100%;margin-bottom:6px" title="Собрать анкеты в ЭТОТ чат из ВСЕХ лорбуков Таверны. Если сеттинг другой, лучше «Из одного лорбука…»">Собрать основных из всех лорбуков</button>'
         : '<button class="sj-btn sj-pri" data-act="minor" style="width:100%;margin-bottom:6px" title="Просмотреть лорбуки NPC и предложить записи «Имя (Русское имя)» как упрощённые анкеты">Собрать из NPC-лорбуков</button>'}
+      <button class="sj-btn" data-act="triage" style="width:100%;margin-bottom:6px" title="Если записи лорбука не в формате «[ Имя ] - Раздел»: разделить их на людей, места и остальное">Разобрать лорбук по людям и местам</button>
       <button class="sj-btn" data-act="reloadall" style="width:100%;margin-bottom:6px" title="Подтянуть из лорбуков тексты, ключи и контекст всех карточек этого чата. Новых карточек не добавляет, ваши правки ключей остаются.">Обновить все из лорбука</button>
       <div class="sj-add" style="margin:0 0 8px"><button class="sj-btn" data-act="new">+ Новая</button><button class="sj-btn" data-act="import">Из одного лорбука</button></div>
       <div class="sj-cardlist">${rows || `<div class="sj-none" style="padding:8px">${tier === 'main' ? 'Основных анкет пока нет. Нажмите «Собрать основных из всех лорбуков»: расширение найдёт записи вида «[ Имя ] - Раздел».' : 'Второстепенных пока нет. Нажмите «Собрать из NPC-лорбуков…», там можно отметить нужных.'}</div>`}</div>`;
@@ -258,7 +259,7 @@ export function startCardsWindow(deps) {
     const scope = d.hasChat ? '' : '<div class="sj-sub" style="margin-bottom:8px">Откройте чат: у каждого чата свои анкеты.</div>';
     const gather = `<div class="sj-add" style="flex-direction:column;align-items:stretch">${tier === 'main'
       ? '<button class="sj-btn sj-pri" data-act="importall">Собрать основных из всех лорбуков</button>'
-      : '<button class="sj-btn sj-pri" data-act="minor">Собрать из NPC-лорбуков</button>'}<button class="sj-btn" data-act="reloadall">Обновить все из лорбука</button><button class="sj-btn" data-act="import">Из одного лорбука</button></div>`;
+      : '<button class="sj-btn sj-pri" data-act="minor">Собрать из NPC-лорбуков</button>'}<button class="sj-btn" data-act="triage">Разобрать лорбук по людям и местам</button><button class="sj-btn" data-act="reloadall">Обновить все из лорбука</button><button class="sj-btn" data-act="import">Из одного лорбука</button></div>`;
     return `${scope}<div class="sj-seg2"><button data-tier="main" aria-pressed="${tier === 'main'}">Основные · ${count('main')}</button><button data-tier="minor" aria-pressed="${tier === 'minor'}">Второстепенные · ${count('minor')}</button></div>
       <input class="sj-ssearch" data-search value="${esc(search)}" placeholder="Поиск по имени" aria-label="Поиск" type="search" autocomplete="off">
       ${rows ? `<div class="sj-sgrp">${rows}</div>` : `<div class="sj-none" style="padding:8px">${tier === 'main' ? 'Основных анкет пока нет. «Собрать основных» найдёт записи вида «[ Имя ] - Раздел».' : 'Второстепенных пока нет.'}</div>`}
@@ -360,6 +361,7 @@ export function startCardsWindow(deps) {
       if (act === 'trstop') { api().stopTranslation(); note = 'Останавливаю после текущего блока…'; return render(); }
       if (act === 'trclear') { if (window.confirm('Удалить русскую версию этой анкеты, включая ваши правки перевода?')) { api().clearRu(selected); note = 'Перевод удалён'; } return; }
       if (act === 'close') return shell.close();
+      if (act === 'triage') return void shared.ui?.openTriage?.();
       if (act === 'mback') { mCard = false; return render(); }
       if (act === 'new') { const name = window.prompt(tier === 'minor' ? 'Имя второстепенного персонажа' : 'Имя персонажа'); if (name) { const id = api().addCard(name, tier); if (id) { selected = id; } } return; }
       if (act === 'minor') { importing = { minor: true, found: null, pick: new Set(), error: '' }; render(); const found = await api().previewMinor(); importing = { minor: true, found, pick: new Set(found.filter(f => !f.exists).map(f => f.key)), error: '' }; return render(); }

@@ -1978,3 +1978,34 @@ html[data-sj-mobile] #sj-calendar .sj-ribbon .sj-seg2 .mark { left: 28%; width: 
 html[data-sj-mobile] #sj-calendar .sj-ribcap { display: none; }
 html[data-sj-mobile] .sj-cmain { display: flex; flex-direction: column; }
 html[data-sj-mobile] #sj-calendar .sj-ribbon { order: -1; margin: 6px 0 4px; }
+
+/* разбор лорбука: плашка в строке, баннер в шторке, окно */
+#sj-strip .sj-trg { flex: none; padding: 1px 7px; border: 1px solid var(--accent); border-radius: 99px; font-size: 14px; line-height: 1.5; cursor: pointer; background: color-mix(in srgb, var(--accent) 18%, transparent); animation: sj-trgpulse 2.4s ease-in-out infinite; }
+@keyframes sj-trgpulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); } }
+@media (prefers-reduced-motion: reduce) { #sj-strip .sj-trg { animation: none; } }
+.sj-sh-banner { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; padding: 9px 10px 9px 12px; border: 1px solid var(--accent, #c8a24a); border-radius: 14px; background: color-mix(in srgb, var(--accent, #c8a24a) 14%, var(--panel2, #242424)); }
+.sj-sh-banner .tx { flex: 1; min-width: 0; font-size: 14px; line-height: 1.25; }
+.sj-sh-banner small { display: block; color: var(--muted, #aaa); font-size: 12px; }
+.sj-sh-banner button { flex: none; min-height: 36px; padding: 6px 12px; border: 1px solid var(--accent, #c8a24a); border-radius: 12px; background: var(--panel2, #242424); color: var(--text, #eee); font: inherit; font-size: 13.5px; cursor: pointer; }
+.sj-sh-banner button[data-tri="later"] { padding: 6px 10px; border-color: var(--line, #444); color: var(--muted, #aaa); }
+#sj-triage .sj-trib { padding: 12px 18px 22px; }
+#sj-triage .sj-tri-empty { padding: 30px 6px; text-align: center; color: var(--muted); }
+#sj-triage .sj-tri-books { display: grid; gap: 8px; margin-top: 8px; }
+#sj-triage .sj-tri-book { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2); }
+#sj-triage .sj-tri-book .tx { flex: 1 1 200px; min-width: 0; }
+#sj-triage .sj-tri-book small, #sj-triage .sj-tri-row small { display: block; color: var(--muted); font-size: 12px; }
+#sj-triage .sj-tri-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2); }
+#sj-triage .sj-tri-tabs button { flex: 1; margin: 0; padding: 9px 4px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font: inherit; font-size: 13.5px; cursor: pointer; width: auto; height: auto; }
+#sj-triage .sj-tri-tabs button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 24%, var(--panel2)); color: var(--text); }
+#sj-triage .sj-tri-list { display: grid; gap: 6px; }
+#sj-triage .sj-tri-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2); }
+#sj-triage .sj-tri-row.unsure { border-style: dashed; }
+#sj-triage .sj-tri-row .tx { flex: 1; min-width: 0; }
+#sj-triage .sj-tri-name { display: block; width: 100%; box-sizing: border-box; padding: 4px 8px; margin: 0 0 2px; font: 600 15px var(--head, Georgia, serif); border-radius: 10px; }
+#sj-triage .sj-tri-title { display: block; font-size: 14.5px; line-height: 1.25; }
+#sj-triage .sj-tri-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sj-triage .sj-tri-kind { flex: none; min-width: 84px; padding: 8px 10px; margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; width: auto; height: auto; }
+#sj-triage .sj-tri-kind.k-person { border-color: #6faa72; }
+#sj-triage .sj-tri-kind.k-place { border-color: #d6b04c; }
+#sj-triage .sj-tri-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+#sj-triage .sj-tri-bar .sj-btn { flex: 1 1 auto; }

@@ -15,6 +15,8 @@ import { startDigest } from './src/digest-service.js';
 import { startChronicleWindow } from './src/ui/chronicle-window.js';
 import { startCards } from './src/cards-service.js';
 import { startPlaceLore } from './src/placelore-service.js';
+import { startTriage } from './src/triage-service.js';
+import { startTriageWindow } from './src/ui/triage-window.js';
 import { startCardsWindow } from './src/ui/cards-window.js';
 import { startMapWindow } from './src/ui/map-window.js';
 import { startSelection } from './src/ui/selection.js';
@@ -38,11 +40,13 @@ const MODULES = [
   { name: 'анкеты (служба)', start: deps => startCards(deps) },
   { name: 'секреты лорбуков (служба)', on: FEATURES.secrets, start: async deps => (await import('./src/secrets-service.js')).startSecrets(deps) },
   { name: 'записи лорбука у мест (служба)', start: deps => startPlaceLore(deps) },
+  { name: 'разбор лорбука (служба)', start: deps => startTriage(deps) },
   { name: 'строка сцены', start: deps => startStrip(deps) },
   { name: 'окно «Тайны»', on: FEATURES.secrets, start: async deps => (await import('./src/ui/secrets-window.js')).startSecretsWindow(deps) },
   { name: 'окно «d20 жизни»', on: FEATURES.fate, start: async deps => (await import('./src/ui/fate-window.js')).startFateWindow(deps) },
   { name: 'окно «Анкеты»', start: deps => startCardsWindow(deps) },
   { name: 'окно «Карта»', start: deps => startMapWindow(deps) },
+  { name: 'окно «Разбор лорбука»', start: deps => startTriageWindow(deps) },
   { name: 'окно «Отношения»', start: deps => startRelationsWindow(deps) },
   { name: 'окно «Архивариус»', start: deps => startChronicleWindow(deps) },
   { name: 'окно «Настройки»', start: deps => startSettingsWindow(deps) },

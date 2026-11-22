@@ -57,6 +57,8 @@ export async function startStrip(deps) {
     const fatePending = Boolean(info.fate && ((info.fate.event && !info.fate.event.sent) || heatPending(info.fate.heat)));
     const mode = fm || fatePending ? `<span class="sj-md${fatePending ? ' pend' : ''}" role="button" tabindex="0" data-fate="1" title="d20 жизни${fatePending ? ': подсказка ждёт следующего ответа' : ''}">${fm ? `<span class="sj-mi">${esc(fmMode.icon)}</span><span class="sj-mw"> ${esc(fmMode.ru)}</span>` : D20_SVG}${fatePending && fm ? ' •' : ''}</span>` : '';
     const diceBtn = FEATURES.fate && !mode ? `<span class="sj-md sj-md0" role="button" tabindex="0" data-fate="1" title="d20 жизни">${D20_SVG}</span>` : '';
+    const triP = shared.triage?.get().pending[0];
+    const trg = triP ? `<span class="sj-trg" role="button" tabindex="0" data-trg="1" title="Лорбук «${esc(triP.book)}»: новые записи (${triP.fresh}). Разобрать по людям и местам" aria-label="Разобрать лорбук">📖</span>` : '';
     const pmis = info.personaMismatch ? `<span class="sj-pw" role="button" tabindex="0" data-pw="1" title="В Таверне персона «${esc(info.personaMismatch.tavern)}», а в чате привязана «${esc(info.personaMismatch.bound)}». Нажмите, чтобы выбрать.">⚠ персона</span>` : '';
     // фото персоны из Таверны: выбранная персона в списке персон, иначе аватар последнего её сообщения
     const personaPhoto = () => {
@@ -87,7 +89,7 @@ export async function startStrip(deps) {
     const html = `<span class="sj-t">${formatTime(time.minutes)}</span><span class="sj-pe" title="${part}">${partIcon(part)}</span><span class="sj-ds">${esc(shortDate(date.name))}</span><span class="sj-part" data-p="${part}">${part}</span>
       <span class="sj-vs"></span><span class="sj-d">${dayBadge}${esc(date.name)}<span class="sj-sub"> · ${date.year} ${esc(date.era)}</span>${holiday}</span>${weather}
       <span class="sj-vs"></span><span class="sj-place${here ? '' : ' sj-none'}">${here ? esc(here) : 'место не задано'}</span>${avatars}
-      ${pmis}${dice}${trk}${mode}${diceBtn}${tension}${chron}${envelope}${camp}
+      ${trg}${pmis}${dice}${trk}${mode}${diceBtn}${tension}${chron}${envelope}${camp}
       <span class="sj-open" aria-hidden="true">▾</span>`;
     strip.dataset.world = state.calendar;
     strip.dataset.cal = themeFor(state.calendar);
@@ -100,19 +102,21 @@ export async function startStrip(deps) {
     if (!m) return;
     if (window.confirm(`В Таверне сейчас персона «${m.tavern}», а в этом чате привязана «${m.bound}».\n\nОК: переключить чат на «${m.tavern}».\nОтмена: оставить «${m.bound}» (предупреждение для «${m.tavern}» больше не покажется).`)) shared.scene.switchPersona(); else shared.scene.keepPersona();
   };
-  const open = event => { const dz = event?.target?.closest?.('[data-dice]'); if (dz) { if (!rollCheckWithDice({ scene: shared.scene, fromEl: dz })) shared.scene?.rollCheck(); return; } const av = event?.target?.closest?.('[data-av]'); if (av) return shared.ui?.openState?.(av.dataset.av); if (event?.target?.closest?.('[data-camp]')) { shared.scene?.pressNudge('rest'); return; } if (event?.target?.closest?.('[data-pw]')) return choosePersona(); if (event?.target?.closest?.('[data-env]')) shared.ui?.openLetter?.(); else if (event?.target?.closest?.('[data-chr]')) shared.ui?.openChronicle?.(); else if (event?.target?.closest?.('[data-fate]')) shared.ui?.openFate?.(); else if (strip.dataset.mobile) shade.toggle(); else shared.ui?.openScene?.(); };
+  const open = event => { if (event?.target?.closest?.('[data-trg]')) return shared.ui?.openTriage?.(); const dz = event?.target?.closest?.('[data-dice]'); if (dz) { if (!rollCheckWithDice({ scene: shared.scene, fromEl: dz })) shared.scene?.rollCheck(); return; } const av = event?.target?.closest?.('[data-av]'); if (av) return shared.ui?.openState?.(av.dataset.av); if (event?.target?.closest?.('[data-camp]')) { shared.scene?.pressNudge('rest'); return; } if (event?.target?.closest?.('[data-pw]')) return choosePersona(); if (event?.target?.closest?.('[data-env]')) shared.ui?.openLetter?.(); else if (event?.target?.closest?.('[data-chr]')) shared.ui?.openChronicle?.(); else if (event?.target?.closest?.('[data-fate]')) shared.ui?.openFate?.(); else if (strip.dataset.mobile) shade.toggle(); else shared.ui?.openScene?.(); };
   const onKey = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(event); } };
   strip.addEventListener('click', open);
   strip.addEventListener('keydown', onKey);
   const unsubscribe = shared.scene?.subscribe(render);
   const unsubscribeChron = shared.chronicle?.subscribe(() => render());
   const unsubscribeCards = shared.cards?.subscribe(() => render());
+  const unsubscribeTriage = shared.triage?.subscribe(() => render());
   render();
 
   return () => {
     unsubscribe?.();
     unsubscribeChron?.();
     unsubscribeCards?.();
+    unsubscribeTriage?.();
     strip.removeEventListener('click', open);
     strip.removeEventListener('keydown', onKey);
     stopMobile();
