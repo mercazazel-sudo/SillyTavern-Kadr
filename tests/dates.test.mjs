@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CALENDARS, locate } from '../extension/src/core/calendars.js';
-import { formatDateText, parseDateText } from '../extension/src/core/dates.js';
+import { CALENDARS, locate } from '../src/core/calendars.js';
+import { formatDateText, parseDateText } from '../src/core/dates.js';
 
 const H = CALENDARS.harptos, E = CALENDARS.earth;
 const at = (cal, year, doy) => { const l = locate(cal, year, doy); return `${l.period.id}:${l.day}`; };

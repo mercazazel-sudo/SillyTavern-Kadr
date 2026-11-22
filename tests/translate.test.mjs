@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hashText, buildSectionRequest, parseSectionReply, buildHeadRequest, parseHeadReply, normalizeRu, planBlocks, blockState, headHash, sectionHash } from '../extension/src/core/translate.js';
-import { normalizeLibrary } from '../extension/src/core/cards.js';
-import { wikiOf, splitSections } from '../extension/src/core/wiki.js';
+import { hashText, buildSectionRequest, parseSectionReply, buildHeadRequest, parseHeadReply, normalizeRu, planBlocks, blockState, headHash, sectionHash } from '../src/core/translate.js';
+import { normalizeLibrary } from '../src/core/cards.js';
+import { wikiOf, splitSections } from '../src/core/wiki.js';
 
 test('отпечаток меняется вместе с текстом', () => {
   assert.equal(hashText('abc'), hashText('abc'));

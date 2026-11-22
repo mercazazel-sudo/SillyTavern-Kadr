@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { STATUSES, STATUS_RU, NEXT_LEAD, normalizeQuests, sortedEntries, lastEntry, openLeads, questLines, QUEST_RULE, isOpenStatus } from '../extension/src/core/journal.js';
-import { questsFromKulisy } from '../extension/src/core/kulisy-import.js';
-import { defaultState, normalizeState } from '../extension/src/core/state.js';
-import { buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
-import { resolveTime } from '../extension/src/core/clock.js';
+import { STATUSES, STATUS_RU, NEXT_LEAD, normalizeQuests, sortedEntries, lastEntry, openLeads, questLines, QUEST_RULE, isOpenStatus } from '../src/core/journal.js';
+import { questsFromKulisy } from '../src/core/kulisy-import.js';
+import { defaultState, normalizeState } from '../src/core/state.js';
+import { buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
+import { resolveTime } from '../src/core/clock.js';
 
 const d = (doy, year = 1492) => ({ year, doy });
 const quest = (extra = {}) => ({

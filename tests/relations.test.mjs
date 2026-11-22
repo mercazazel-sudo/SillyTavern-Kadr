@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { SCALE_IDS, describeScale, normalizeRelations, relationLines, emptyRelations, RULE } from '../extension/src/core/relations.js';
-import { relationsFromKulisy } from '../extension/src/core/kulisy-import.js';
-import { normalizeState, defaultState } from '../extension/src/core/state.js';
-import { buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
-import { resolveTime } from '../extension/src/core/clock.js';
+import { SCALE_IDS, describeScale, normalizeRelations, relationLines, emptyRelations, RULE } from '../src/core/relations.js';
+import { relationsFromKulisy } from '../src/core/kulisy-import.js';
+import { normalizeState, defaultState } from '../src/core/state.js';
+import { buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
+import { resolveTime } from '../src/core/clock.js';
 
 const cast = [
   { id: 'c1', name: 'Лилит', persona: true, present: true },
@@ -138,7 +138,7 @@ test('хедканоны: нормализация, только присутс�
   assert.deepEqual(plan.headcanons.map(h => [h.id, h.pair, h.enabled]), [['x1', 'c1|c2', true], ['x2', 'c1|c2', false]]);
 });
 
-import { UI_SCALES, MAIN_SCALES, normalizeRelations as normRel } from '../extension/src/core/relations.js';
+import { UI_SCALES, MAIN_SCALES, normalizeRelations as normRel } from '../src/core/relations.js';
 test('десять шкал окна: четыре основные первыми, все из допустимых; старые пять остаются допустимыми в данных', () => {
   assert.equal(UI_SCALES.length, 10);
   assert.deepEqual(UI_SCALES.slice(0, 4), ['approval', 'hostility', 'friendship', 'love']);

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TIERS, SEVERITY, ZONES, ZONE_IDS, clampTier, normalizeCast, normalizeBodies, woundAge, healLeft, condLeft, suggestTier, bodyLine, buildCastLines, presentCast } from '../extension/src/core/body.js';
-import { defaultState, normalizeState } from '../extension/src/core/state.js';
-import { buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
-import { resolveTime } from '../extension/src/core/clock.js';
+import { TIERS, SEVERITY, ZONES, ZONE_IDS, clampTier, normalizeCast, normalizeBodies, woundAge, healLeft, condLeft, suggestTier, bodyLine, buildCastLines, presentCast } from '../src/core/body.js';
+import { defaultState, normalizeState } from '../src/core/state.js';
+import { buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
+import { resolveTime } from '../src/core/clock.js';
 
 const today = { year: 1492, doy: 40 };
 const wound = (extra = {}) => ({ id: 'w1', zone: 'legL', t: 'рваная рана бедра', sev: 2, bnd: true, since: { year: 1492, doy: 38 }, ...extra });
@@ -89,9 +89,9 @@ test('состояние чата хранит участников и тела;
   assert.match(block, /body\[Тав\]: ранен/);
 });
 
-import { MOODS, cleanMood, bodyLine as bl2, normalizeBodies as nb2 } from '../extension/src/core/body.js';
-import { parseTraces as pt2, buildTracesRequest as bt2, wantsTraces as wt2 } from '../extension/src/core/chronicle.js';
-import { normalizeInventory as ni2 } from '../extension/src/core/inventory.js';
+import { MOODS, cleanMood, bodyLine as bl2, normalizeBodies as nb2 } from '../src/core/body.js';
+import { parseTraces as pt2, buildTracesRequest as bt2, wantsTraces as wt2 } from '../src/core/chronicle.js';
+import { normalizeInventory as ni2 } from '../src/core/inventory.js';
 test('настроение: нормализация, строка рассказчику', () => {
   assert.deepEqual(cleanMood({ id: 'fear', lvl: 9 }), { id: 'fear', lvl: 3 });
   assert.equal(cleanMood({ id: 'вздор' }), null);
@@ -113,8 +113,8 @@ test('Архивариус: настроение и «надел/снял» из
   assert.equal(wt2('Он накинул плащ и нахмурился.'), true); assert.equal(wt2('Шёл дождь.'), false);
 });
 
-import { cleanArousal, AROUSAL_RU, emptyBody as emptyBody3 } from '../extension/src/core/body.js';
-import { normalizeRelations as normRel3 } from '../extension/src/core/relations.js';
+import { cleanArousal, AROUSAL_RU, emptyBody as emptyBody3 } from '../src/core/body.js';
+import { normalizeRelations as normRel3 } from '../src/core/relations.js';
 
 test('возбуждение: шкала 0..4, нормализация, строка рассказчику только при ненулевом', () => {
   assert.equal(cleanArousal(9), 4); assert.equal(cleanArousal(-3), 0); assert.equal(cleanArousal('x'), 0); assert.equal(cleanArousal(2.9), 2);

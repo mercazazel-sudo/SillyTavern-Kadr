@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { searchCards, normSearch } from '../extension/src/core/card-search.js';
+import { searchCards, normSearch } from '../src/core/card-search.js';
 
 const card = (id, name, o = {}) => ({ id, name, aliases: o.aliases ?? [], tier: o.tier ?? 'main', sections: [{ title: 'Описание', text: o.text ?? '' }] });
 const cards = [

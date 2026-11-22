@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { detectWeatherChange, narrationOnly } from '../extension/src/core/weather-detect.js';
+import { detectWeatherChange, narrationOnly } from '../src/core/weather-detect.js';
 
 const kind = text => detectWeatherChange(text)?.kind ?? null;
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { latinKey, sameNameAcrossScripts, findAcrossScripts } from '../extension/src/core/names.js';
+import { latinKey, sameNameAcrossScripts, findAcrossScripts } from '../src/core/names.js';
 
 test('имена между алфавитами: Астарион и Astarion Ancunín — один человек', () => {
   assert.equal(latinKey('Астарион'), 'astarion');

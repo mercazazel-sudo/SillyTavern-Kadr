@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeInventory, applyItemOp, undoItemOp, inventoryLines, sameItem, findItem, RULE } from '../extension/src/core/inventory.js';
-import { wantsItems, parseItems, buildItemsRequest, pickTasks } from '../extension/src/core/chronicle.js';
-import { normalizeRelations } from '../extension/src/core/relations.js';
-import { normalizeState, defaultState } from '../extension/src/core/state.js';
-import { buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
-import { resolveTime } from '../extension/src/core/clock.js';
+import { normalizeInventory, applyItemOp, undoItemOp, inventoryLines, sameItem, findItem, RULE } from '../src/core/inventory.js';
+import { wantsItems, parseItems, buildItemsRequest, pickTasks } from '../src/core/chronicle.js';
+import { normalizeRelations } from '../src/core/relations.js';
+import { normalizeState, defaultState } from '../src/core/state.js';
+import { buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
+import { resolveTime } from '../src/core/clock.js';
 
 const mk = (() => { let n = 0; return () => `n${++n}`; })();
 const base = () => normalizeInventory([
@@ -88,7 +88,7 @@ test('журнал изменений принимает вещи', () => {
   assert.equal(r.log[0].before.length, 1);
 });
 
-import { SHORT_RULES } from '../extension/src/core/scene-text.js';
+import { SHORT_RULES } from '../src/core/scene-text.js';
 
 test('краткие правила: втрое короче, смысл на месте, по умолчанию включены', () => {
   const s = defaultState('harptos');

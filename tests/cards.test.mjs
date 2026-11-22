@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { parseSheetTitle, kindOfTitle, cardsFromBook, normalizeLibrary, normalizeChatCards, matchPerson, mentionedIn, selectSections, buildCardsBlock, sheetEntryTest, estimateTokens, DEFAULT_WHEN, KINDS } from '../extension/src/core/cards.js';
-import { normalizeState } from '../extension/src/core/state.js';
+import { parseSheetTitle, kindOfTitle, cardsFromBook, normalizeLibrary, normalizeChatCards, matchPerson, mentionedIn, selectSections, buildCardsBlock, sheetEntryTest, estimateTokens, DEFAULT_WHEN, KINDS } from '../src/core/cards.js';
+import { normalizeState } from '../src/core/state.js';
 
 const entry = (uid, comment, content, extra = {}) => ({ uid, comment, content, key: [], disable: false, ...extra });
 const book = [
@@ -120,7 +120,7 @@ test('настоящий лорбук персонажей разбираетс�
   assert.equal(lib2.cards.length, cards.length);
 });
 
-import { sameCharacter } from '../extension/src/core/cards.js';
+import { sameCharacter } from '../src/core/cards.js';
 
 test('другие виды названий: «Имя (Русское имя) — Раздел» и одиночные записи NPC', () => {
   assert.deepEqual(parseSheetTitle('Astarion (Астарион) — Basic Info'), { name: 'Astarion', alias: 'Астарион', title: 'Basic Info' });
@@ -160,7 +160,7 @@ test('служебные записи NPC-лорбуков не становят
   assert.equal(parseSheetTitle('Orin (Орин)', { single: true })?.name, 'Orin');
 });
 
-import { findDuplicates } from '../extension/src/core/cards.js';
+import { findDuplicates } from '../src/core/cards.js';
 test('похожие карточки: Vestor и Alden Vestor предлагаются к объединению, разные имена нет', () => {
   const mk = (id, name, text = '', aliases = []) => ({ id, name, aliases, sections: [{ id: 's', title: 'База', text }] });
   const r = findDuplicates([mk('1', 'Vestor', 'коротко'), mk('2', 'Alden Vestor', 'длинное описание персонажа'), mk('3', 'Astarion'), mk('4', 'Gale'), mk('5', 'Алия', '', ['Gale'])]);
@@ -198,7 +198,7 @@ test('NPC-лорбук с записями-именами: «Кага», «Де�
   assert.ok(cards.every(c => c.tier === 'minor'));
 });
 
-import { ctxMatches } from '../extension/src/core/cards.js';
+import { ctxMatches } from '../src/core/cards.js';
 test('контекст раздела: Мол уходит только при тифлингах, если её нет в кадре', () => {
   const entries = [{ uid: 1, comment: 'Мол', content: 'Тифлинг, главарь детей.', key: ['/мол/iu'], keysecondary: ['/(?<![\p{L}])тифлинг(?:а|и|ов)?/iu'] }];
   const [card] = cardsFromBook(entries, 'NPC', { single: true });
@@ -225,7 +225,7 @@ test('в карточке сохраняются все ключи записи,
   assert.equal(pick('смолк тифлинг').length, 0);                                       // ключ с границами слова не цепляет «смолк»
 });
 
-import { cardFromWholeBook } from '../extension/src/core/cards.js';
+import { cardFromWholeBook } from '../src/core/cards.js';
 test('лорбук об одном персонаже: все записи становятся разделами одной карточки', () => {
   const entries = [
     { uid: 1, comment: '1. Обряд и семь тысяч душ', content: 'Текст раз.', key: ['обряд'], keysecondary: [] },

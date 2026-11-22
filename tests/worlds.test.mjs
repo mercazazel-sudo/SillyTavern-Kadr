@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeState, switchWorld, defaultState } from '../extension/src/core/state.js';
+import { normalizeState, switchWorld, defaultState } from '../src/core/state.js';
 
 const played = () => normalizeState({
   calendar: 'harptos', place: 'Врата Балдура', start: { year: 1492, doy: 40, minutes: 600 },

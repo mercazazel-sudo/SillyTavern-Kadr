@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CALENDARS, ORDER, yearLength } from '../extension/src/core/calendars.js';
-import { addMinutes, resolveTime, partOfDay, skipMinutes, parseDuration, formatTime, validDate } from '../extension/src/core/clock.js';
-import { defaultState, normalizeState, trimTimeline, hasStep, addEvent, lastIndex } from '../extension/src/core/state.js';
-import { buildSceneBlock, describeDate, holidaysToday, enabledLayers } from '../extension/src/core/scene-text.js';
+import { CALENDARS, ORDER, yearLength } from '../src/core/calendars.js';
+import { addMinutes, resolveTime, partOfDay, skipMinutes, parseDuration, formatTime, validDate } from '../src/core/clock.js';
+import { defaultState, normalizeState, trimTimeline, hasStep, addEvent, lastIndex } from '../src/core/state.js';
+import { buildSceneBlock, describeDate, holidaysToday, enabledLayers } from '../src/core/scene-text.js';
 
 test('длины годов сходятся с данными', () => {
   assert.equal(yearLength(CALENDARS.exandria, 835), 328);

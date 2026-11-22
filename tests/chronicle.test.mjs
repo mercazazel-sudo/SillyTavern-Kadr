@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseJsonObject, auxReady, AUX_DEFAULTS } from '../extension/src/llm.js';
-import { wantsJournal, wantsRelations, pickTasks, parseJournal, parseRelations, buildJournalRequest, buildRelationsRequest, mentionedPeople, MAX_DELTA } from '../extension/src/core/chronicle.js';
-import { normalizeQuests } from '../extension/src/core/journal.js';
-import { normalizeRelations, emptyRelations } from '../extension/src/core/relations.js';
+import { parseJsonObject, auxReady, AUX_DEFAULTS } from '../src/llm.js';
+import { wantsJournal, wantsRelations, pickTasks, parseJournal, parseRelations, buildJournalRequest, buildRelationsRequest, mentionedPeople, MAX_DELTA } from '../src/core/chronicle.js';
+import { normalizeQuests } from '../src/core/journal.js';
+import { normalizeRelations, emptyRelations } from '../src/core/relations.js';
 
 const quests = normalizeQuests([
   { id: 'q1', title: 'Поиски лекаря', status: 'active', goal: 'Найти лекаря.', leads: [{ id: 'l1', t: 'Кишка, торговка', state: 'open' }, { id: 'l2', t: 'Хальсин', state: 'work' }], entries: [] },
@@ -102,7 +102,7 @@ test('разбор отношений: имена, шкалы, потолок с
   assert.deepEqual(parseRelations({ changes: 'мусор' }, { cast, lines: [] }), []);
 });
 
-import { wantsScene, sceneRoster, buildSceneRequest, parseScene } from '../extension/src/core/chronicle.js';
+import { wantsScene, sceneRoster, buildSceneRequest, parseScene } from '../src/core/chronicle.js';
 
 test('кто в кадре: фильтр, запрос, разбор (пришёл, ушёл, персона и мёртвые не трогаются)', () => {
   const rel = normalizeRelations({ people: [{ id: 'c5', name: 'Карлах', aliases: ['Карла'] }, { id: 'c6', name: 'Вилл' }] });
@@ -134,7 +134,7 @@ test('журнал изменений нормализуется: мусор и 
   assert.equal(r.log[1].wasPresent, true);
 });
 
-import { newNameCandidates } from '../extension/src/core/chronicle.js';
+import { newNameCandidates } from '../src/core/chronicle.js';
 
 test('новые герои: кандидаты по заглавным словам в середине предложения', () => {
   const roster = sceneRoster(cast, normalizeRelations({}), { deaths: {} });
@@ -160,7 +160,7 @@ test('новые герои: разбор ответа модели, имя до
   assert.deepEqual(parseScene({ new: [{ name: 'Тамара', present: false }] }, roster, reply)[0].present, false);
 });
 
-import { wantsTraces, parseTraces, buildTracesRequest } from '../extension/src/core/chronicle.js';
+import { wantsTraces, parseTraces, buildTracesRequest } from '../src/core/chronicle.js';
 
 test('приметы и раны: фильтр, запрос, проверка ответа модели', () => {
   assert.equal(wantsTraces('На шее остался след от клыков.'), true);
@@ -193,8 +193,8 @@ test('журнал изменений принимает записи тела',
   assert.equal(r.log[0].prevTier, 1);
 });
 
-import { wantsPlace, parsePlace, buildPlaceRequest } from '../extension/src/core/chronicle.js';
-import { normalizeLibrary as normPlaceLib, normalizeMap as normPlaceMap, allNodes as allPlaceNodes } from '../extension/src/core/places.js';
+import { wantsPlace, parsePlace, buildPlaceRequest } from '../src/core/chronicle.js';
+import { normalizeLibrary as normPlaceLib, normalizeMap as normPlaceMap, allNodes as allPlaceNodes } from '../src/core/places.js';
 
 test('место: фильтр, запрос, проверка ответа (известное, новое с родителем, находки, повторы)', () => {
   assert.equal(wantsPlace('Они вошли в деревню.'), true);
@@ -219,8 +219,8 @@ test('место: фильтр, запрос, проверка ответа (и�
   assert.deepEqual(parsePlace({}, ctx), []);
 });
 
-import { wantsKnowledge, parseKnowledge, buildKnowledgeRequest } from '../extension/src/core/chronicle.js';
-import { normalizeKnowledge as normKnow } from '../extension/src/core/secrets.js';
+import { wantsKnowledge, parseKnowledge, buildKnowledgeRequest } from '../src/core/chronicle.js';
+import { normalizeKnowledge as normKnow } from '../src/core/secrets.js';
 
 test('моменты: воспоминания и напряжения пар из ответа; повторы и одиночки отбрасываются', () => {
   const ppl = [{ id: 'c1', name: 'Лилит', persona: true, present: true }, { id: 'c2', name: 'Шэдоухарт', persona: false, present: true }, { id: 'c3', name: 'Астарион', persona: false, present: true }];
@@ -246,7 +246,7 @@ test('журнал изменений принимает записи момен
   assert.equal(r.log[2].prevState, 'open');
 });
 
-import { storyText } from '../extension/src/core/story.js';
+import { storyText } from '../src/core/story.js';
 
 test('рассказ без служебного блока анализа', () => {
   assert.equal(storyText('<rp_preflight> [ANCHOR] Setting: подвал. Present: Астарион </rp_preflight>Чугунный боек вошёл в кладку.'), 'Чугунный боек вошёл в кладку.');
@@ -258,8 +258,8 @@ test('рассказ без служебного блока анализа', () 
   assert.equal(pickTasks('Тишина.', { quests: [], cast: [], relations: normalizeRelations({}), knowledge: { deaths: {} } }, { items: true, itemsAlways: false }).includes('items'), false);
 });
 
-import { planRequests, mergeRequests, GROUPS, buildItemsRequest } from '../extension/src/core/chronicle.js';
-import { isRateLimit } from '../extension/src/llm.js';
+import { planRequests, mergeRequests, GROUPS, buildItemsRequest } from '../src/core/chronicle.js';
+import { isRateLimit } from '../src/llm.js';
 
 test('запросы группами: раскладка, склейка без дублей ответа, разбор по ключам', () => {
   const tasks = ['scene', 'relations', 'know', 'journal', 'items', 'body', 'place'];

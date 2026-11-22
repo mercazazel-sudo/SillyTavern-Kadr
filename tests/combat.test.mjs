@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { detectCombat, detectTension } from '../extension/src/core/tension.js';
-import { detectAutoMode } from '../extension/src/core/fate.js';
+import { detectCombat, detectTension } from '../src/core/tension.js';
+import { detectAutoMode } from '../src/core/fate.js';
 
 test('бой включают конкретные действия, ведущие к бою', () => {
   for (const text of [

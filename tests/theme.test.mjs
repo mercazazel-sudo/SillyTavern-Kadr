@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isHex, themeFromAccent, setTheme, getTheme, getColor, themeFor, paletteOf, themeList, PALETTES, CUSTOM } from '../extension/src/ui/theme.js';
-import { ORDER } from '../extension/src/core/calendars.js';
+import { isHex, themeFromAccent, setTheme, getTheme, getColor, themeFor, paletteOf, themeList, PALETTES, CUSTOM } from '../src/ui/theme.js';
+import { ORDER } from '../src/core/calendars.js';
 
 test('палитры: для каждого мира есть цвета, имена и мир для карточки', () => {
   assert.deepEqual(themeList().map(x => x.id), ORDER);

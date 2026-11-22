@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanDigestSettings, pickBatch, cutCount, buildSummaryRequest, parseSummary, summaryBlock, rewindSnapshots } from '../extension/src/core/digest.js';
+import { cleanDigestSettings, pickBatch, cutCount, buildSummaryRequest, parseSummary, summaryBlock, rewindSnapshots } from '../src/core/digest.js';
 
 const mk = n => Array.from({ length: n }, (_, i) => ({ name: i % 2 ? 'Нарратор' : 'Игрок', is_user: i % 2 === 0, mes: `сообщение ${i}`, send_date: `d${i}` }));
 

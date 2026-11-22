@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { moonsOf, moonPhase, moonSvg, phaseOf, PHASES } from '../extension/src/core/moon.js';
-import { CALENDARS, yearLength } from '../extension/src/core/calendars.js';
+import { moonsOf, moonPhase, moonSvg, phaseOf, PHASES } from '../src/core/moon.js';
+import { CALENDARS, yearLength } from '../src/core/calendars.js';
 
 const events = (cal, year, days, i = 0, period = {}) => {
   const moon = moonsOf(cal, period)[i];
@@ -67,9 +67,9 @@ test('соседи пика «надкушены»: у новолуния ест
   assert.ok(rx > 0 && rx <= 9.5 * 0.8 + 0.01);
 });
 
-import { locate } from '../extension/src/core/calendars.js';
-import { moonHolidaysOn, moonDayKinds } from '../extension/src/core/moon.js';
-import { holidaysToday } from '../extension/src/core/scene-text.js';
+import { locate } from '../src/core/calendars.js';
+import { moonHolidaysOn, moonDayKinds } from '../src/core/moon.js';
+import { holidaysToday } from '../src/core/scene-text.js';
 
 const HP = CALENDARS.harptos, ALL = new Set(HP.layers.map(l => l.id));
 const yearCount = layers => {

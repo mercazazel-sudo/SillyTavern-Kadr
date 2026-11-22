@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeInventory } from '../extension/src/core/inventory.js';
-import { equipment, wear, unwear, findGear, gearLine, wardrobeOf, backpackOf } from '../extension/src/core/gear.js';
+import { normalizeInventory } from '../src/core/inventory.js';
+import { equipment, wear, unwear, findGear, gearLine, wardrobeOf, backpackOf } from '../src/core/gear.js';
 
 const base = () => normalizeInventory([
   { id: 'd1', name: 'Кинжал', ownerId: 'a', kind: 'weapon', range: 'melee', hands: 1, worn: true },
@@ -54,9 +54,9 @@ test('поиск вещи по названию и строка для расс�
   assert.equal(gearLine('Пусто', [], 'a'), '');
 });
 
-import { weaponKindOf, WEAPON_KINDS, WEAPON_IDS } from '../extension/src/core/gear.js';
-import { normalizeItem } from '../extension/src/core/inventory.js';
-import { weaponIcon, WEAPON_ICON_IDS } from '../extension/src/ui/weapon-icons.js';
+import { weaponKindOf, WEAPON_KINDS, WEAPON_IDS } from '../src/core/gear.js';
+import { normalizeItem } from '../src/core/inventory.js';
+import { weaponIcon, WEAPON_ICON_IDS } from '../src/ui/weapon-icons.js';
 
 test('вид оружия: сохранённый wtype главнее, иначе угадывается по названию, арбалет не путается с луком', () => {
   assert.equal(weaponKindOf({ kind: 'weapon', name: 'Что-то', wtype: 'mace' }), 'mace');
@@ -83,8 +83,8 @@ test('у каждого вида оружия есть значок и подп�
   assert.equal(weaponIcon('laser'), '');
 });
 
-import { SLOTS as SLOTS_FOR_TEST, OUTFITS, outfitByWords, normalizeOutfits, outfitSet, outfitSaveWorn, outfitState, wearOutfit } from '../extension/src/core/gear.js';
-import { mergePeople as mergePeopleForOutfits } from '../extension/src/core/merge-people.js';
+import { SLOTS as SLOTS_FOR_TEST, OUTFITS, outfitByWords, normalizeOutfits, outfitSet, outfitSaveWorn, outfitState, wearOutfit } from '../src/core/gear.js';
+import { mergePeople as mergePeopleForOutfits } from '../src/core/merge-people.js';
 
 const wardrobe = () => normalizeInventory([
   { id: 'b1', name: 'Камзол', ownerId: 'a', kind: 'gear', slot: 'body', worn: true },
@@ -149,8 +149,8 @@ test('слияние людей переносит комплекты лишне
   assert.deepEqual(s.outfits, { k: { camp: { feet: 'f1' } } });          // у основного свой комплект главнее
 });
 
-import { CLOTHING_KINDS, CLOTHING_IDS, clothingKindOf, clothingForSlot } from '../extension/src/core/gear.js';
-import { clothIcon, CLOTH_ICON_IDS } from '../extension/src/ui/cloth-icons.js';
+import { CLOTHING_KINDS, CLOTHING_IDS, clothingKindOf, clothingForSlot } from '../src/core/gear.js';
+import { clothIcon, CLOTH_ICON_IDS } from '../src/ui/cloth-icons.js';
 
 test('вид одежды: по названию внутри слота, специфичное раньше общего', () => {
   const g = (name, slot, extra = {}) => clothingKindOf({ kind: 'gear', name, slot, ...extra });
@@ -210,7 +210,7 @@ test('слот ног убран: старые штаны становятся �
   assert.deepEqual(SLOTS_FOR_TEST.map(s => s.id), ['head', 'cloak', 'body', 'hands', 'feet']);
 });
 
-import { CAMP_LOOKS, campLookOf } from '../extension/src/core/gear.js';
+import { CAMP_LOOKS, campLookOf } from '../src/core/gear.js';
 test('лагерная одежда: десять обликов, номер хранится у вещи, значок берётся по номеру', () => {
   assert.equal(CAMP_LOOKS.length, 10);
   assert.equal(campLookOf({ look: 7 }), 7); assert.equal(campLookOf({}), 1); assert.equal(campLookOf({ look: 99 }), 1); assert.equal(campLookOf({ look: 'x' }), 1);
@@ -220,7 +220,7 @@ test('лагерная одежда: десять обликов, номер х�
   assert.match(clothIcon('camp', 6), /camp6\.png/); assert.match(clothIcon('camp'), /camp1\.png/); assert.match(clothIcon('camp', 99), /camp1\.png|camp10\.png/);
 });
 
-import { slotIcon, SLOT_ICON_IDS } from '../extension/src/ui/cloth-icons.js';
+import { slotIcon, SLOT_ICON_IDS } from '../src/ui/cloth-icons.js';
 test('у каждого слота есть значок пустого слота, и он тот же набор, что слоты одежды', () => {
   assert.deepEqual([...SLOT_ICON_IDS].sort(), SLOTS_FOR_TEST.map(s => s.id).sort());
   for (const id of SLOT_ICON_IDS) assert.match(slotIcon(id), /^<span class="wi sph" role="img" style="--wi:url\('.+\/assets\/slots\/[a-z]+\.png'\)"><\/span>$/);

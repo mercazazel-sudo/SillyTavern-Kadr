@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startDigest } from '../extension/src/digest-service.js';
+import { startDigest } from '../src/digest-service.js';
 
 function setup({ n = 20, runs = [], reply = '{"summary":"Они встретились. Лилит согласилась помочь."}' } = {}) {
   const chat = Array.from({ length: n }, (_, i) => ({ name: i % 2 ? 'Нарратор' : 'Лилит', is_user: i % 2 === 0, mes: `сообщение ${i}`, send_date: `d${i}` }));

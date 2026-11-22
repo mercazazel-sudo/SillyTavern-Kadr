@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MODES, MODE_IDS, MODE_SETS, SET_IDS, modesOf, detectDailyMode, NUDGES, TABLES, rollEvent, HEAT, HEAT_IDS, HEAT_NUDGES, HEAT_ACTS, HEAT_ACT_IDS, normalizeHeat, moveHeat, heatLines, heatPending, normalizeFate, emptyFate, fateLines, FATE_RULE } from '../extension/src/core/fate.js';
-import { normalizeState, defaultState } from '../extension/src/core/state.js';
-import { buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
-import { resolveTime } from '../extension/src/core/clock.js';
+import { MODES, MODE_IDS, MODE_SETS, SET_IDS, modesOf, detectDailyMode, NUDGES, TABLES, rollEvent, HEAT, HEAT_IDS, HEAT_NUDGES, HEAT_ACTS, HEAT_ACT_IDS, normalizeHeat, moveHeat, heatLines, heatPending, normalizeFate, emptyFate, fateLines, FATE_RULE } from '../src/core/fate.js';
+import { normalizeState, defaultState } from '../src/core/state.js';
+import { buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
+import { resolveTime } from '../src/core/clock.js';
 
 /** Детерминированный «случай»: по очереди отдаёт заданные числа. */
 const seq = (...v) => { let i = 0; return () => v[i++ % v.length]; };
@@ -117,7 +117,7 @@ test('блок рассказчику: строки судьбы и правил
   assert.doesNotMatch(buildSceneBlock({ shortRules: false, state: s, time: resolveTime(s, 1), layers: enabledLayers({}, 'harptos') }), /fate/);
 });
 
-import { detectAutoMode, HIGH_MODES } from '../extension/src/core/fate.js';
+import { detectAutoMode, HIGH_MODES } from '../src/core/fate.js';
 
 test('режим сам: Лагерь, Город, Приключение, Бой; ручной режим не трогается; Бой и Близость главнее остальных', () => {
   const d = o => { const r = detectAutoMode({ text: '', place: '', level: 0, mode: '', auto: false, back: null, ...o }); return r && { mode: r.mode, auto: r.auto }; };
@@ -151,7 +151,7 @@ test('режим сам: Лагерь, Город, Приключение, Бо�
   assert.deepEqual(HIGH_MODES, ['fight', 'intimacy']);
 });
 
-import { parseCheck, rollCheck, checkDirective, CHECK_INSTRUCTION } from '../extension/src/core/fate.js';
+import { parseCheck, rollCheck, checkDirective, CHECK_INSTRUCTION } from '../src/core/fate.js';
 
 test('проверка кубом: строка рассказчика, исходы, преимущество и помеха', () => {
   assert.deepEqual(parseCheck('Клинок летит в тебя.\n[[КУБ: удар клинка | сложность 14 | помеха]]'), { label: 'удар клинка', dc: 14, mode: 'disadvantage', kind: 'dodge' });
@@ -179,7 +179,7 @@ test('проверка кубом: состояние нормализуется
   assert.equal(fateLines(normalizeFate({}), { diceCheck: true }).some(l => /КУБ/.test(l)), true);
 });
 
-import { rollCheck as rollCheckCore } from '../extension/src/core/fate.js';
+import { rollCheck as rollCheckCore } from '../src/core/fate.js';
 test('проверка кубом принимает выпавшие кубики: 1d20 обычный, 2d20 с преимуществом (лучший) и помехой (худший)', () => {
   const r = (mode, dice, dc = 12) => rollCheckCore({ dc, mode, dice, random: () => 0.5 });
   assert.deepEqual(r('normal', [15]), { dice: [15], roll: 15, outcome: 'dodge', sev: 0 });
@@ -193,7 +193,7 @@ test('проверка кубом принимает выпавшие кубик
   assert.equal(r('normal', [0]).roll, 11); assert.equal(r('normal', ['7']).roll, 11); assert.equal(r('normal', [21]).roll, 11);   // random 0.5 -> 11
 });
 
-import { detectAutoMode as dam } from '../extension/src/core/fate.js';
+import { detectAutoMode as dam } from '../src/core/fate.js';
 test('чужой лагерь (Лагерь гоблинов) не включает режим «Лагерь»; свой лагерь и привал включают', () => {
   assert.equal(dam({ text: 'Вы торгуетесь у костра в лагере.', place: 'Лагерь гоблинов' }), null);
   assert.equal(dam({ text: 'Он вышел к воротам.', place: 'Гоблинский лагерь' }), null);

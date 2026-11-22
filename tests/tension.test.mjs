@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveTension, detectTension, describeTension, LEVELS, clampLevel } from '../extension/src/core/tension.js';
-import { buildLetterBlock, cleanLetter, TEMPLATES, LETTER_MAX } from '../extension/src/core/letter.js';
-import { defaultState, normalizeState, addEvent } from '../extension/src/core/state.js';
-import { resolveTime } from '../extension/src/core/clock.js';
-import { buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
+import { resolveTension, detectTension, describeTension, LEVELS, clampLevel } from '../src/core/tension.js';
+import { buildLetterBlock, cleanLetter, TEMPLATES, LETTER_MAX } from '../src/core/letter.js';
+import { defaultState, normalizeState, addEvent } from '../src/core/state.js';
+import { resolveTime } from '../src/core/clock.js';
+import { buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
 
 const step = at => ({ type: 'step', at, minutes: 10 });
 const tens = (at, level, source = 'manual') => ({ type: 'tension', at, level, source });

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CALENDARS, locate, weekdayOf, holidaysOf, defaultLayers, yearLength, addDays, seasonOf } from '../extension/src/core/calendars.js';
-import { moonsOf, moonPhase } from '../extension/src/core/moon.js';
-import { defaultState, normalizeState } from '../extension/src/core/state.js';
+import { CALENDARS, locate, weekdayOf, holidaysOf, defaultLayers, yearLength, addDays, seasonOf } from '../src/core/calendars.js';
+import { moonsOf, moonPhase } from '../src/core/moon.js';
+import { defaultState, normalizeState } from '../src/core/state.js';
 
 const E = CALENDARS.earth;
 const doyOf = (y, mo, d) => Math.round((Date.UTC(y, mo - 1, d) - Date.UTC(y, 0, 1)) / 86400000) + 1;

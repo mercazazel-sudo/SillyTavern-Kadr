@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateWeather, resolveWeather, tempAt, dayKey, seasonFor, KINDS, KIND_IDS, CLIMATE_IDS, describeWeather } from '../extension/src/core/weather.js';
-import { defaultState, normalizeState, addEvent } from '../extension/src/core/state.js';
-import { resolveTime } from '../extension/src/core/clock.js';
-import { buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
+import { generateWeather, resolveWeather, tempAt, dayKey, seasonFor, KINDS, KIND_IDS, CLIMATE_IDS, describeWeather } from '../src/core/weather.js';
+import { defaultState, normalizeState, addEvent } from '../src/core/state.js';
+import { resolveTime } from '../src/core/clock.js';
+import { buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
 
 test('погода детерминирована: та же дата и климат дают то же самое', () => {
   const a = generateWeather('harptos', 1492, 40, 'temperate');

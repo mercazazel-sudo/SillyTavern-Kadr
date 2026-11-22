@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { normalizeLibrary, normalizeMap, emptyMap, allNodes, chainOf, pathOf, canMove, findNode, cardOf, placeLines, libraryFromKulisy, mapFromKulisy, childrenOf, mergePlaceFile, normalizeLinks, loreKey, loreEnabled, loreFires, loreStripped, placeLoreLines, RULE } from '../extension/src/core/places.js';
-import { normalizeState } from '../extension/src/core/state.js';
+import { normalizeLibrary, normalizeMap, emptyMap, allNodes, chainOf, pathOf, canMove, findNode, cardOf, placeLines, libraryFromKulisy, mapFromKulisy, childrenOf, mergePlaceFile, normalizeLinks, loreKey, loreEnabled, loreFires, loreStripped, placeLoreLines, RULE } from '../src/core/places.js';
+import { normalizeState } from '../src/core/state.js';
 
 const lib = () => normalizeLibrary({ nodes: [
   { id: 'f1', name: 'Врата Балдура 3', kind: 'folder' }, { id: 'f2', name: 'Побережье', kind: 'folder', parentId: 'f1' },
@@ -79,7 +79,7 @@ test('экспорт Нарратора1: 75 мест чата проходят 
   assert.ok(nodes.every(n => pathOf(nodes, n.id).length > 0));
 });
 
-import { placeLines as pl2, normalizeMap as nm2, normalizeLibrary as nl2 } from '../extension/src/core/places.js';
+import { placeLines as pl2, normalizeMap as nm2, normalizeLibrary as nl2 } from '../src/core/places.js';
 test('выключенная карточка места рассказчику не уходит, список выключенных сохраняется', () => {
   const lib = nl2({ nodes: [{ id: 'a', name: 'Лагерь', kind: 'place', description: 'Костёр и палатки.' }] });
   assert.equal(pl2(lib, nm2({ current: 'a' })).length, 1);
@@ -87,7 +87,7 @@ test('выключенная карточка места рассказчику 
   assert.deepEqual(nm2({ off: ['a', 'a', 'b', ''] }).off, ['a', 'b']);
 });
 
-import { libraryFromKulisy as lfk, nestingFromKulisy as nfk } from '../extension/src/core/places.js';
+import { libraryFromKulisy as lfk, nestingFromKulisy as nfk } from '../src/core/places.js';
 test('библиотека Кулис: место внутри места остаётся вложенным, картинка переносится', () => {
   const kl = { folders: [{ id: 'f1', name: 'Акт 1' }], locations: [
     { id: 'a', name: 'Изумрудная роща', folderId: 'f1', image: '/user/images/x/place_a.webp' },
@@ -110,7 +110,7 @@ test('место с названием своей папки остаётся в
   assert.equal(nfk(kl).find(x => x.id === 'coast').ownFolder, '');
 });
 
-import { descendantsOf as desc2 } from '../extension/src/core/places.js';
+import { descendantsOf as desc2 } from '../src/core/places.js';
 test('потомки узла на любую глубину, без него самого и без зацикливания', () => {
   const nodes = [{ id: 'f', parentId: '' }, { id: 'a', parentId: 'f' }, { id: 'b', parentId: 'a' }, { id: 'c', parentId: 'b' }, { id: 'x', parentId: '' }];
   assert.deepEqual(desc2(nodes, 'a').map(n => n.id), ['b', 'c']);

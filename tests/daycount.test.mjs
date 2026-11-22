@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { daysBetween, dayNumber, shiftDate, resolveTime, addMinutes } from '../extension/src/core/clock.js';
-import { defaultState, normalizeState, addEvent } from '../extension/src/core/state.js';
-import { describeDate, buildSceneBlock, enabledLayers } from '../extension/src/core/scene-text.js';
-import { convertKulisy } from '../extension/src/core/kulisy-import.js';
-import { yearLength, CALENDARS } from '../extension/src/core/calendars.js';
+import { daysBetween, dayNumber, shiftDate, resolveTime, addMinutes } from '../src/core/clock.js';
+import { defaultState, normalizeState, addEvent } from '../src/core/state.js';
+import { describeDate, buildSceneBlock, enabledLayers } from '../src/core/scene-text.js';
+import { convertKulisy } from '../src/core/kulisy-import.js';
+import { yearLength, CALENDARS } from '../src/core/calendars.js';
 
 test('дни между датами: в пределах года, через конец года и назад', () => {
   assert.equal(daysBetween('eberron', { year: 998, doy: 10 }, { year: 998, doy: 15 }), 5);

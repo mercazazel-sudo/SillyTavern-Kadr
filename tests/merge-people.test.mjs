@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergePeople } from '../extension/src/core/merge-people.js';
+import { mergePeople } from '../src/core/merge-people.js';
 
 const base = () => ({
   cast: [{ id: 'lil', name: 'Лилит', persona: true, present: true }, { id: 'ast', name: 'Astarion Ancunín', persona: false, present: true }],

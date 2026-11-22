@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { purgePerson } from '../extension/src/core/purge-person.js';
+import { purgePerson } from '../src/core/purge-person.js';
 
 const make = () => ({
   cast: [{ id: 'a', name: 'Рафаил', present: true }, { id: 'b', name: 'Астарион', present: true }],
