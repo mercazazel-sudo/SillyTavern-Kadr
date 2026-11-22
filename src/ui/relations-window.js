@@ -72,8 +72,8 @@ export function startRelationsWindow(deps) {
     const goneIds = info.knowledge.deaths ?? {};
     const mobile = Boolean(document.documentElement.dataset.sjMobile);
     const linesOf = p => info.relations.lines.filter(l => (p.persona ? l.to : l.from) === p.id).length;
-    const hiddenN = mobile && !showAll ? info.people.filter(p => !p.present && !linesOf(p) && p.id !== selected).length : 0;
-    const rows = [...info.people].filter(p => !(mobile && !showAll && !p.present && !linesOf(p) && p.id !== selected)).sort((a, b) => Number(Boolean(goneIds[a.id])) - Number(Boolean(goneIds[b.id]))).map(p => {
+    const hiddenN = mobile && !showAll ? info.people.filter(p => !p.persona && !p.present && !linesOf(p) && p.id !== selected).length : 0;
+    const rows = [...info.people].filter(p => !p.persona).filter(p => !(mobile && !showAll && !p.present && !linesOf(p) && p.id !== selected)).sort((a, b) => Number(Boolean(goneIds[a.id])) - Number(Boolean(goneIds[b.id]))).map(p => {
       const dead = Boolean(goneIds[p.id]);
       const n = info.relations.lines.filter(l => (p.persona ? l.to : l.from) === p.id).length;
       return `<button class="sj-q${p.present ? '' : ' away'}${dead ? ' dead' : ''}" data-person="${esc(p.id)}" aria-current="${p.id === selected}"><span class="ic">${dead ? '✕' : p.present ? '●' : '○'}</span><span class="nm">${esc(p.name)}${p.persona ? ' <small>(вы)</small>' : ''}</span><span class="meta">${n ? (p.persona ? `чувств к вам: ${n}` : `чувств: ${n}`) : 'нет линий'}${dead ? ' · умер, не учитывается' : p.present ? '' : ' · не в кадре'}</span></button>`;
@@ -119,9 +119,11 @@ export function startRelationsWindow(deps) {
   function pageHtml(info) {
     const person = info.people.find(p => p.id === selected);
     if (!person) return '<div class="sj-empty">Выберите человека слева.</div>';
-    const lines = info.relations.lines.filter(l => (dir === 'out' ? l.from : l.to) === person.id);
+    // чувства самой персоны не ведутся: линий «от персоны» нет ни в списке, ни среди предлагаемых
+    const isPersonaId = id => Boolean(info.people.find(p => p.id === id)?.persona);
+    const lines = info.relations.lines.filter(l => (dir === 'out' ? l.from : l.to) === person.id && !(dir === 'in' && isPersonaId(l.from)));
     const have = new Set(lines.map(l => (dir === 'out' ? l.to : l.from)));
-    const options = info.people.filter(p => p.id !== person.id && !have.has(p.id)).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+    const options = info.people.filter(p => p.id !== person.id && !have.has(p.id) && !(dir === 'in' && p.persona)).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
     const note = '';
     return `<div class="sj-qh"><h2>${esc(person.name)}</h2><div class="acts">${person.persona ? '<span class="sj-sub">Что чувствуют к вам</span>' : `<button class="sj-tab" data-dir="out" aria-pressed="${dir === 'out'}">Что чувствует</button><button class="sj-tab" data-dir="in" aria-pressed="${dir === 'in'}">Что чувствуют к нему</button>`}</div></div>${note}
       <div style="margin-top:10px">${lines.map(l => lineHtml(info, l)).join('') || '<div class="sj-none">Линий нет.</div>'}</div>
@@ -155,16 +157,17 @@ export function startRelationsWindow(deps) {
     const linesOf = p => info.relations.lines.filter(l => (p.persona ? l.to : l.from) === p.id).length;
     const skip = p => !showAll && !p.present && !linesOf(p) && p.id !== selected;
     const photoOf = new Map((shared.cards?.get()?.cards ?? []).filter(x => x.person && x.image).map(x => [x.person.id, x.image]));
-    const hiddenN = info.people.filter(skip).length;
-    const faces = [...info.people].filter(p => !skip(p)).sort((a, b) => Number(Boolean(goneIds[a.id])) - Number(Boolean(goneIds[b.id]))).map(p => {
+    const hiddenN = info.people.filter(p => !p.persona && skip(p)).length;
+    const faces = [...info.people].filter(p => !p.persona && !skip(p)).sort((a, b) => Number(Boolean(goneIds[a.id])) - Number(Boolean(goneIds[b.id]))).map(p => {
       const img = photoOf.get(p.id);
       return `<button type="button" class="sj-fc${p.id === selected ? ' sel' : ''}${goneIds[p.id] ? ' dead' : ''}${p.present ? '' : ' away'}" data-person="${esc(p.id)}"><i>${img ? `<img src="${esc(img)}" alt="">` : esc(String(p.name).trim().charAt(0).toUpperCase())}</i><span>${esc(p.name)}</span></button>`;
     }).join('');
     const moreBtn = hiddenN ? `<button type="button" class="sj-fc" data-act="showall" aria-label="Показать остальных"><i>+${hiddenN}</i><span>ещё</span></button>` : '';
     const person = info.people.find(p => p.id === selected);
-    const lines = person ? info.relations.lines.filter(l => (dir === 'out' ? l.from : l.to) === person.id) : [];
+    const isPersonaId = id => Boolean(info.people.find(p => p.id === id)?.persona);
+    const lines = person ? info.relations.lines.filter(l => (dir === 'out' ? l.from : l.to) === person.id && !(dir === 'in' && isPersonaId(l.from))) : [];
     const have = new Set(lines.map(l => (dir === 'out' ? l.to : l.from)));
-    const options = person ? info.people.filter(p => p.id !== person.id && !have.has(p.id)).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('') : '';
+    const options = person ? info.people.filter(p => p.id !== person.id && !have.has(p.id) && !(dir === 'in' && p.persona)).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('') : '';
     const sub = !person ? '' : person.persona ? 'что чувствуют к вам' : dir === 'out' ? `что чувствует ${person.name}` : `что чувствуют к ${person.name}`;
     const seg = person && !person.persona ? `<div class="sj-seg2"><button data-dir="out" aria-pressed="${dir === 'out'}">Что чувствует</button><button data-dir="in" aria-pressed="${dir === 'in'}">К нему</button></div>` : '';
     const plan = scene().previewKulisyRelations?.();
@@ -182,7 +185,8 @@ export function startRelationsWindow(deps) {
     const info = scene()?.get();
     if (!info?.hasChat) { shell.close(); return; }
     shell.theme(info.state.calendar);
-    if (!info.people.some(p => p.id === selected)) selected = (info.people.find(p => p.present && !p.persona) ?? info.people[0])?.id ?? '';
+    const others = info.people.filter(p => !p.persona);          // персона в этом окне не показывается: её чувства не ведутся
+    if (!others.some(p => p.id === selected)) selected = (others.find(p => p.present) ?? others[0])?.id ?? '';
     const isPersona = Boolean(info.people.find(p => p.id === selected)?.persona);
     if (isPersona) dir = 'in'; else if (wasPersona) dir = 'out';
     wasPersona = isPersona;
