@@ -1,0 +1,15 @@
+{
+  "display_name": "Кадр",
+  "loading_order": 40,
+  "js": "index.js",
+  "css": "style.css",
+  "author": "Azazel",
+  "version": "0.1.0",
+  "minimum_client_version": "1.18.0",
+  "auto_update": true,
+  "generate_interceptor": "sceneJournalIntercept",
+  "hooks": {
+    "activate": "init"
+  },
+  "homePage": "https://github.com/mercazazel-sudo/SillyTavern-Kadr"
+}
