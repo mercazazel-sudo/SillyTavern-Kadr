@@ -92,10 +92,16 @@ export function startStateWindow(deps) {
   const bpmOf = (m, lvl) => Math.round(m.bpm * (m.id === 'calm' || m.id === 'sad' ? 1 : 0.9 + lvl * 0.07));
   // возбуждение разгоняет пульс и делает ритм чуть неровнее, поверх настроения
   const pulseMood = (m, ar) => (ar ? { ...m, bpm: m.bpm + ar * 10, irr: Math.max(m.irr, 0.04 * ar), jit: m.jit + ar * 0.01 } : m);
+  /** Анкета человека: найденная по имени или прозвищу; у персоны (игрока) анкет нет. */
+  const cardOfPerson = person => (person.persona ? null : (shared.cards?.get().cards ?? []).find(c => c.person?.id === person.id) ?? null);
   function stripHtml(person, body, dead) {
+    const card = cardOfPerson(person);
+    const cardBtn = person.persona || !shared.cards ? ''
+      : card ? `<button class="sx-cardbtn on" data-act="opencard" data-card="${esc(card.id)}" title="Открыть анкету в окне «Анкеты»">Анкета ›</button>`
+        : '<button class="sx-cardbtn" data-act="tocards" title="Анкеты нет: создать второстепенную анкету из этого героя и открыть её, чтобы заполнить описание">+ В анкеты</button>';
     const m = moodOf(body.mood?.id), lvl = body.mood?.lvl ?? 1, t = TIERS[body.tier], ar = cleanArousal(body.arousal);
     return `<div class="sx-strip" style="--mc:${m.color}">
-      <div class="sx-nm"><h3>${esc(person.name)}${person.persona ? ' <i>· ты</i>' : ''}</h3><small>${dead ? 'умер' : person.present ? 'сейчас в кадре' : 'за кадром'} · ${esc(t.ru)}</small></div>
+      <div class="sx-nm"><h3>${esc(person.name)}${person.persona ? ' <i>· ты</i>' : ''}</h3><small>${dead ? 'умер' : person.present ? 'сейчас в кадре' : 'за кадром'} · ${esc(t.ru)}</small>${cardBtn}</div>
       <div class="sx-chipcol"><button class="sx-moodbtn" data-act="moodpop" title="Сменить настроение"><i></i>${esc(m.ru)}<em>${m.id === 'calm' ? '' : esc(MOOD_LEVEL_RU[lvl])} ▾</em></button>
         <button class="sx-arbtn${ar ? ' on' : ''}" data-act="arousalpop" title="Возбуждение: отдельная шкала рядом с настроением"><span class="pips">${[1, 2, 3, 4].map(n => `<i class="${n <= ar ? 'f' : ''}"></i>`).join('')}</span>Возбуждение<em>${ar ? esc(AROUSAL_RU[ar]) : 'нет'} ▾</em></button></div>
       <div class="sx-pulse"><div class="sx-scope"><canvas class="sj-ecg"${dead ? ' data-flat="1"' : ''} aria-label="${dead ? 'Пульса нет' : 'Пульс'}"></canvas></div><div class="sx-bpm${dead ? ' flat' : ''}"><b>${dead ? '0' : bpmOf(pulseMood(m, ar), lvl)}</b><small>уд/мин</small></div></div>
@@ -355,6 +361,13 @@ export function startStateWindow(deps) {
     if (act === 'addgear') { const name = win.querySelector('#sj-gname'); const kind = parseType(win.querySelector('#sj-gtype').value), wk = WEAPON_KINDS.find(k => k.id === win.querySelector('#sj-gwtype').value), ck = CLOTHING_KINDS.find(k => k.id === win.querySelector('#sj-gcty')?.value);
       if (!scene().addGear({ ownerId: selected, name: name.value, ...kind, ...(kind.kind === 'weapon' && wk ? { wtype: wk.id, range: wk.range } : {}), ...(kind.kind === 'gear' && ck ? { ctype: ck.id, slot: ck.slot, ...(ck.id === 'camp' ? { look: Number(win.querySelector('#sj-glook')?.value) || 1 } : {}) } : {}) })) name.classList.add('sj-bad'); return; }
     if (act === 'bindpersona') { if (scene().switchPersona()) { const p = scene().get().cast.find(x => x.persona); if (p) selected = p.id; } return; }
+    if (act === 'tocards') {
+      const p = scene().get().cast.find(x => x.id === selected);
+      const id = p ? shared.cards?.addFromPerson(p) : '';
+      if (id) { shell.close(); shared.ui?.openCards?.(id); }
+      return;
+    }
+    if (act === 'opencard') { const id = t.closest('[data-act]')?.dataset.card; if (id) { shell.close(); shared.ui?.openCards?.(id); } return; }
     if (act === 'removeperson') {
       const p = scene().get().cast.find(x => x.id === selected);
       if (p && window.confirm(`Убрать «${p.name}» из этого чата совсем? Исчезнут его чувства, раны и запись в составе; вещи станут общими.`)) scene().removePersonFromChat(p.id);

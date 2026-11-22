@@ -5,10 +5,22 @@
 const NARROW = '(max-width: 800px)';
 const WIDE_LIMIT = 1100;   // телефон лёжа или малый планшет: ещё тесно, шире уже обычная раскладка
 
+/** Выбор человека в настройках: auto, on (телефонный вид всегда), off (никогда). */
+export function mobileMode() {
+  try {
+    const v = globalThis.SillyTavern?.getContext?.().extensionSettings?.sceneJournal?.mobileMode;
+    return v === 'on' || v === 'off' ? v : 'auto';
+  } catch { return 'auto'; }
+}
+
 export function isMobileView() {
   try {
+    const mode = mobileMode();
+    if (mode === 'on') return true;
+    if (mode === 'off') return false;
     if (window.matchMedia(NARROW).matches) return true;
-    const byDevice = Boolean(globalThis.SillyTavern?.getContext?.().isMobile?.());
+    // телефон или планшет: тип устройства по версии Таверны или сенсорный экран (в режиме «версия для компьютера» ширина около 980)
+    const byDevice = Boolean(globalThis.SillyTavern?.getContext?.().isMobile?.()) || window.matchMedia('(pointer: coarse)').matches;
     return byDevice && window.innerWidth <= WIDE_LIMIT;
   } catch { return false; }
 }

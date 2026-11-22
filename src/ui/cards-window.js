@@ -459,8 +459,9 @@ export function startCardsWindow(deps) {
     render();
   });
 
-  function open() {
+  function open(cardId = '') {
     importing = null; note = ''; mCard = false;
+    if (typeof cardId === 'string' && cardId && cardsApi().get().cards.some(c => c.id === cardId)) { selected = cardId; mCard = true; tier = cardsApi().get().cards.find(c => c.id === cardId).tier === 'minor' ? 'minor' : 'main'; }
     shell.show(shared.scene?.get()?.state?.calendar ?? settings.calendar);
     render();
     win.focus();

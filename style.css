@@ -2009,3 +2009,8 @@ html[data-sj-mobile] #sj-calendar .sj-ribbon { order: -1; margin: 6px 0 4px; }
 #sj-triage .sj-tri-kind.k-place { border-color: #d6b04c; }
 #sj-triage .sj-tri-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 #sj-triage .sj-tri-bar .sj-btn { flex: 1 1 auto; }
+
+/* кнопка «В анкеты» / «Анкета» в окне состояния */
+.sx-cardbtn { display: inline-block; margin-top: 6px; padding: 4px 12px; border: 1px dashed var(--accent); border-radius: 99px; background: transparent; color: var(--accent); font: inherit; font-size: 12.5px; font-style: normal; cursor: pointer; width: auto; height: auto; }
+.sx-cardbtn:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.sx-cardbtn.on { border-style: solid; color: var(--muted); border-color: var(--line); }

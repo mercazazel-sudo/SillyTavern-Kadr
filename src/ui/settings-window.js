@@ -12,6 +12,7 @@ import { describeWeather } from '../core/weather.js';
 import { diagnosticsHtml, changesHtml, sentHtml } from './diagnostics.js';
 import { FEATURES } from '../core/features.js';
 import { D20_SVG } from './d20-icon.js';
+import { mobileMode, syncMobile } from './mobile.js';
 
 // «Основные настройки»: как работает расширение. «Данные»: что уходит модели и как идут запросы.
 const MAIN_GROUPS = [
@@ -29,6 +30,8 @@ export function startSettingsWindow(deps) {
   const { win } = shell;
   const scene = () => shared.scene;
   let importNote = '';
+  let version = '';           // версия расширения из manifest.json: по ней видно, дошло ли обновление
+  fetch(new URL('../../manifest.json', import.meta.url)).then(r => r.json()).then(j => { version = String(j?.version ?? ''); if (shell.isOpen) render(); }).catch(() => { /* версия не показывается */ });
   let testNote = '';
   let modelNames = [];
   let tab = 'main';           // 'main': основные настройки, 'data': данные (что уходит модели, запросы, ошибки)
@@ -95,6 +98,7 @@ export function startSettingsWindow(deps) {
       <label class="sj-chk" style="margin-top:8px"><input type="checkbox" data-chron="auto" ${cfg.auto ? 'checked' : ''}><span>Разбирать каждый ответ сам (фильтры отсекают пустые)</span></label>
       <label class="sj-chk"><input type="checkbox" data-chron="journal" ${cfg.journal ? 'checked' : ''}><span>Задача «журнал»: записи, зацепки, новые квесты</span></label>
       <label class="sj-chk"><input type="checkbox" data-chron="scene" ${cfg.scene ? 'checked' : ''}><span>Задача «кто в кадре»: приход и уход людей по тексту</span></label>
+      <label class="sj-chk"><input type="checkbox" data-chron="newToCards" ${cfg.newToCards ? 'checked' : ''}><span>Новых героев сразу добавлять в анкеты (второстепенные, с пустым описанием)</span></label>
       <label class="sj-chk"><input type="checkbox" data-chron="autoApplyScene" ${cfg.autoApplyScene ? 'checked' : ''}><span>Менять состав сцены сразу, без подтверждения (можно отменить)</span></label>
       <label class="sj-chk"><input type="checkbox" data-chron="autoApplyRelations" ${cfg.autoApplyRelations ? 'checked' : ''}><span>Менять отношения сразу, без подтверждения (можно отменить)</span></label>
       <label class="sj-chk"><input type="checkbox" data-chron="items" ${cfg.items ? 'checked' : ''}><span>Задача «вещи»: кто что взял, отдал, потерял</span></label>
@@ -140,14 +144,14 @@ export function startSettingsWindow(deps) {
   function mobileSections(info) {
     const setup = '<div class="sj-add" style="margin-bottom:8px"><button class="sj-btn" data-act="setup" title="Персона, мир и первый день, лорбуки: пошаговая настройка">Мастер первой настройки</button></div>';
     const connect = chronicleHtml().split('<label class="sj-chk" style="margin-top:8px">')[0];
-    const tasks = [['auto', 'Разбирать каждый ответ', 'фильтры отсекают пустые'], ['journal', 'Журнал', 'записи, зацепки, новые квесты'], ['scene', 'Кто в кадре', 'приход и уход людей по тексту'], ['relations', 'Отношения', 'сдвиги шкал и воспоминания'], ['items', 'Вещи', 'кто что взял, отдал, потерял'], ['body', 'Приметы и раны', 'следы, мокрая одежда, ссадины, раны'], ['place', 'Место', 'где сцена, находки и перемены']];
+    const tasks = [['auto', 'Разбирать каждый ответ', 'фильтры отсекают пустые'], ['journal', 'Журнал', 'записи, зацепки, новые квесты'], ['scene', 'Кто в кадре', 'приход и уход людей по тексту'], ['newToCards', 'Новых героев в анкеты', 'сразу, второстепенными, с пустым описанием'], ['relations', 'Отношения', 'сдвиги шкал и воспоминания'], ['items', 'Вещи', 'кто что взял, отдал, потерял'], ['body', 'Приметы и раны', 'следы, мокрая одежда, ссадины, раны'], ['place', 'Место', 'где сцена, находки и перемены']];
     if (FEATURES.secrets) tasks.push(['know', 'Знания', 'кто что узнал, знакомства, гибель']);
     const applyNow = [['autoApplyScene', 'Состав сцены'], ['autoApplyRelations', 'Отношения'], ['autoApplyItems', 'Вещи'], ['autoApplyBody', 'Приметы и раны'], ['autoApplyPlace', 'Место'], ['autoApplyJournal', 'Записи журнала', 'новые квесты только по подтверждению']];
     if (FEATURES.secrets) applyNow.splice(5, 0, ['autoApplyKnow', 'Знания']);
     return [
       { id: 'sections', icon: '▦', title: 'Разделы', sub: 'что показывать в меню «К»', keys: 'разделы меню журнал карта скрыть отключить', html: `${group('Меню', trow('flag', 'hub', 'Кнопка «К» с меню', 'без неё разделы открываются из шторки над полем ввода'))}${group('Показывать в меню', `${trow('flag', 'showJournal', 'Журнал', 'квесты, зацепки, записи')}${trow('flag', 'showMap', 'Карта', 'места, приметы, перемены')}`, 'Выключенный раздел пропадает из меню. Данные остаются, их можно вернуть тумблером.')}` },
-      { id: 'look', icon: '◐', title: 'Внешний вид', sub: 'цвет окон, строка сцены', keys: 'цвет палитра тема строка счётчик дней',
-        html: `${group('Цвет окон', themesHtml())}${group('Строка сцены', `${trow('flag', 'strip', 'Строка у поля ввода', 'время, дата и режим над полем ввода')}${trow('flag', 'dayCounter', 'Счётчик дней', 'Д1, Д2… в шторке строки')}`)}` },
+      { id: 'look', icon: '◐', title: 'Внешний вид', sub: 'цвет окон, строка сцены', keys: 'цвет палитра тема строка счётчик дней телефонный вид мобильный',
+        html: `${group('Телефонный вид', mobileSelect())}${group('Цвет окон', themesHtml())}${group('Строка сцены', `${trow('flag', 'strip', 'Строка у поля ввода', 'время, дата и режим над полем ввода')}${trow('flag', 'dayCounter', 'Счётчик дней', 'Д1, Д2… в шторке строки')}`)}` },
       { id: 'teller', icon: '✉', title: 'Что видит рассказчик', sub: 'какие блоки уходят в запрос', keys: 'рассказчик запрос блок время место праздник квесты кадр отношения тайны анкеты раны вещи погода напряжение карточка правила вес бюджет токены',
         html: `${sizesHtml(info)}${group('Мир', `${trow('flag', 'sendBlock', 'Время и место', 'дата, время суток, где сцена')}${trow('flag', 'sendHolidays', 'Праздник дня')}${trow('flag', 'sendQuests', 'Идущие квесты')}${trow('flag', 'sendWeather', 'Погода')}${trow('flag', 'sendTension', 'Напряжение', 'на «спокойно» не отправляется')}`)}${group('Люди', `${trow('flag', 'sendCast', 'Кто в кадре')}${trow('flag', 'sendRelations', 'Отношения', 'только тех, кто в кадре')}${trow('flag', 'sendCards', 'Анкеты', 'заменяют записи лорбука')}${trow('flag', 'sendBody', 'Состояние и раны', 'тех, кто в кадре')}${trow('flag', 'sendInventory', 'Вещи', 'тех, кто в кадре')}${FEATURES.secrets ? trow('flag', 'sendKnowledge', 'Тайны', 'кто что знает, знакомства, погибшие') : ''}`)}${group('Сцена', `${FEATURES.fate ? trow('flag', 'sendFate', 'd20 жизни', 'режим, подсказки, броски') : ''}${trow('flag', 'sendPlaces', 'Карточка места')}${trow('flag', 'shortRules', 'Краткие правила', 'легче промпт на ~550 токенов, но правила короче')}`)}${group('Вес запроса, знаков', `${stepRow('relationsBudget', 'Отношения')}${FEATURES.secrets ? stepRow('knowledgeBudget', 'Тайны') : ''}${stepRow('cardsBudget', 'Анкеты', 'токенов примерно треть')}`)}` },
       { id: 'arch', icon: '✎', title: 'Архивариус', sub: 'вспомогательная модель, что разбирать', keys: 'архивариус модель запросы профиль ключ задачи журнал отношения вещи раны место',
@@ -168,7 +172,7 @@ export function startSettingsWindow(deps) {
     if (!cur) page = '';
     const close = '<button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button>';
     if (!cur) {
-      win.innerHTML = `<div class="sj-wh"><h2>Настройки</h2><span class="sj-sub">Кадр</span>${close}</div>
+      win.innerHTML = `<div class="sj-wh"><h2>Настройки</h2><span class="sj-sub">Кадр${version ? `, версия ${esc(version)}` : ''}</span>${close}</div>
         <div class="sj-smob"><input class="sj-ssearch" data-ssearch type="search" placeholder="Найти настройку" aria-label="Найти настройку" autocomplete="off">
         <div class="sj-slist">${sections.map(x => `<button type="button" class="sj-srow" data-spage="${x.id}" data-keys="${esc(`${x.title} ${x.sub} ${x.keys}`.toLowerCase())}"><span class="ic">${x.icon}</span><span class="tx"><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></span><span class="go">›</span></button>`).join('')}</div>
         <div class="sj-sub" data-snone hidden>Ничего не найдено.</div>
@@ -184,9 +188,11 @@ export function startSettingsWindow(deps) {
     shell.theme(info.state.calendar);
     if (isMobile()) { renderMobile(info); return; }
     const tabs = `<div class="sj-filters" style="padding:0 18px 4px"><button class="sj-tab" data-stab="main" aria-pressed="${tab === 'main'}">Основные настройки</button><button class="sj-tab" data-stab="data" aria-pressed="${tab === 'data'}">Данные</button></div>`;
-    win.innerHTML = `<div class="sj-wh"><h2>Настройки</h2><span class="sj-sub">Кадр</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>${tabs}
+    win.innerHTML = `<div class="sj-wh"><h2>Настройки</h2><span class="sj-sub">Кадр${version ? `, версия ${esc(version)}` : ''}</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>${tabs}
       <div class="sj-sbody">${tab === 'data' ? dataHtml(info) : mainHtml(info)}</div>`;
   }
+
+  const mobileSelect = () => `<label class="sj-row">Телефонный вид<select data-mmode aria-label="Телефонный вид">${[['auto', 'Сам: по экрану и устройству'], ['on', 'Всегда включён'], ['off', 'Выключен']].map(([v, ru]) => `<option value="${v}"${mobileMode() === v ? ' selected' : ''}>${ru}</option>`).join('')}</select></label><div class="sj-sub" style="margin:-4px 0 10px">Если телефонный вид не включился сам (например, браузер на телефоне открыт как «версия для компьютера»), выберите «Всегда включён».</div>`;
 
   function themesHtml() {
     const cur = getTheme();
@@ -208,6 +214,7 @@ export function startSettingsWindow(deps) {
   function mainHtml(info) {
     const themes = themesHtml();
     return `<div class="sj-scol">
+        ${mobileSelect()}
         <div class="sj-add" style="margin-bottom:10px"><button class="sj-btn" data-act="setup" title="Персона, мир и первый день, лорбуки: пошаговая настройка">Мастер первой настройки</button></div>
         ${themes}
         ${MAIN_GROUPS.map(([title, items]) => `<div class="sj-lbl" style="margin-top:10px">${title}</div>${items.map(([k, l]) => flag(k, l)).join('')}`).join('')}
@@ -244,6 +251,7 @@ export function startSettingsWindow(deps) {
     const el = event.target;
     try {
       if (el.dataset?.themecolor !== undefined) { settings.themeColor = el.value; settings.theme = CUSTOM; deps.save?.(); return; }
+      if (el.dataset?.mmode !== undefined) { settings.mobileMode = el.value; deps.save?.(); syncMobile(); render(); return; }
       if (el.dataset.budget) { const lim = el.dataset.budget === 'relationsBudget' ? [500, 12000] : [300, 8000]; scene().setSetting(el.dataset.budget, Math.min(Math.max(Math.round(Number(el.value) || lim[0]), lim[0]), lim[1])); }
       else if (el.dataset.aux) {
         const key = el.dataset.aux;

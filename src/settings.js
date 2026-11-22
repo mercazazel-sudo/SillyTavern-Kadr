@@ -6,6 +6,7 @@ export const KEY = 'sceneJournal';
 export const DEFAULTS = Object.freeze({
   enabled: true,
   strip: true,            // строка сцены у поля ввода
+  mobileMode: 'auto',     // телефонный вид: auto (по экрану и устройству), on (всегда), off (никогда)
   hub: true,              // пульт разделов (на телефоне кнопка «К»)
   showJournal: true,      // пункт «Журнал» в меню разделов
   showMap: true,          // пункт «Карта» в меню разделов
@@ -49,7 +50,7 @@ export const DEFAULTS = Object.freeze({
   tensionDecay: 3,        // каждые N ответов без новых событий напряжение остывает на ступень (0 = не остывает)
   depth: 1,               // глубина вставки блока в чат
   aux: { ...AUX_DEFAULTS },                      // вспомогательная модель Архивариуса
-  chronicle: { auto: true, journal: true, relations: true, scene: true, items: true, itemsAlways: true, body: true, place: true, autoApplyPlace: true, know: true, autoApplyKnow: true, requestMode: 'grouped', autoApplyJournal: true, autoApplyBody: true, autoApplyRelations: true, autoApplyScene: true, autoApplyItems: true },   // Архивариус: сам после ответа, и какие задачи
+  chronicle: { newToCards: false, auto: true, journal: true, relations: true, scene: true, items: true, itemsAlways: true, body: true, place: true, autoApplyPlace: true, know: true, autoApplyKnow: true, requestMode: 'grouped', autoApplyJournal: true, autoApplyBody: true, autoApplyRelations: true, autoApplyScene: true, autoApplyItems: true },   // Архивариус: сам после ответа, и какие задачи
   digest: { enabled: true, keep: 6, batch: 6, words: 350, markHidden: true },   // сжатие контекста: сколько последних сообщений оставить, по сколько сжимать, длина сводки
   layers: {},             // выбранные слои праздников: { календарь: [id слоёв] }
 });

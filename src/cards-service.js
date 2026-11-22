@@ -136,6 +136,24 @@ export function startCards(deps) {
     mutateLib(lib => { lib.cards.push({ id, name: text, tier, aliases: [], image: '', sections: [{ id: 's1', kind: 'basic', title: tier === 'minor' ? 'Описание' : KINDS.basic, text: '' }] }); });
     return id;
   };
+  /**
+   * Анкета для человека из сцены, которого нет в лорбуке: второстепенная, с одним пустым разделом «Описание».
+   * Имя и прозвища берутся из состава чата. Если анкета с таким именем уже есть, возвращается она.
+   */
+  const addFromPerson = person => {
+    const name = String(person?.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (!name) return '';
+    const have = library().cards.find(c => sameCharacter(c.name, name) || (c.aliases ?? []).some(a => sameName(a, name)));
+    if (have) return have.id;
+    const info = scene()?.get();
+    const known = info?.hasChat ? info.relations.people.find(p => p.id === person.id)?.aliases ?? [] : [];
+    const aliases = [...new Set([...(Array.isArray(person.aliases) ? person.aliases : []), ...known].map(a => String(a ?? '').trim()).filter(a => a && !sameName(a, name)))].slice(0, 12);
+    const id = newId();
+    mutateLib(lib => { lib.cards.push({ id, name, tier: 'minor', aliases, image: '', sections: [{ id: 's1', kind: 'basic', title: 'Описание', text: '' }] }); });
+    note = `Анкета «${name}» создана из сцены: заполните описание.`;
+    notify();
+    return id;
+  };
   const removeCard = id => { mutateLib(lib => { lib.cards = lib.cards.filter(c => c.id !== id); }); };
   /** Объединяет дубль в основную карточку: разделы (одинаковые пропускаются), псевдонимы, фото; имя берётся более полное. В этом чате дубль заменяется основной. */
   const mergeCards = (keepId, dropId) => {
@@ -553,7 +571,7 @@ export function startCards(deps) {
     /** Лорбуки, привязанные к этому чату и персонажу (для других служб: секреты и т.п.). null: ограничение снято в настройках, можно любые. */
     uploadImage,
     boundBooks: async () => (onlyBound() ? [...(await refreshBound())] : null),
-    get, bookNames, loadEntries, importEntries, previewBook, importBook, importBookAsOne, importAll, reloadAll, previewMinor, importMinor, addCard, removeCard, mergeCards, updateCard, setSection, addSection, removeSection, setImage,
+    get, bookNames, addFromPerson, loadEntries, importEntries, previewBook, importBook, importBookAsOne, importAll, reloadAll, previewMinor, importMinor, addCard, removeCard, mergeCards, updateCard, setSection, addSection, removeSection, setImage,
     translateCard, translatePlan, stopTranslation, setRu, clearRu,
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };

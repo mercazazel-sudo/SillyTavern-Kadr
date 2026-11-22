@@ -209,7 +209,7 @@ export function startChronicle(deps) {
         if (task === 'scene' && auto.scene) {
           // состав сцены применяется сразу: следующие задачи уже видят, кто рядом
           for (const p of got) {
-            if (p.kind === 'newperson') { if (s.applyNewPerson({ ...p, at: index })) applied += 1; }
+            if (p.kind === 'newperson') { const pid = s.applyNewPerson({ ...p, at: index }); if (pid) { applied += 1; if (settings.chronicle.newToCards) shared.cards?.addFromPerson({ id: pid, name: p.name, aliases: p.aliases }); } }
             else if (s.applyCastChange({ personId: p.personId, present: p.kind === 'arrive', at: index, label: p.label })) applied += 1;
           }
           const named = new Set(got.filter(p => p.kind === 'newperson').map(p => p.name.toLowerCase()));
