@@ -235,7 +235,9 @@ export function relationLines(rel, cast, { maxChars = 2500, memoryLimit = 3, ten
   const persona = cast.find(p => p.persona)?.id ?? '';
   const name = id => nameOf(id, cast, rel) || id;
   const gone = new Set(dead);
-  const chosen = rel.lines.filter(l => l.from !== persona && !gone.has(l.from) && present.has(l.from) && present.has(l.to))
+  // пустая линия (заведена по умолчанию, шкалы на нуле, записей нет) рассказчику ничего не говорит: её не отправляем
+  const filled = l => Object.keys(l.scales).some(id => !l.hidden.includes(id)) || Boolean(l.stage || l.goal) || l.memories.some(m => !m.disabled) || l.tensions.some(t => !t.disabled) || l.factors.length > 0;
+  const chosen = rel.lines.filter(l => l.from !== persona && !gone.has(l.from) && present.has(l.from) && present.has(l.to) && filled(l))
     .sort((a, b) => weight(b, persona) - weight(a, persona) || a.id.localeCompare(b.id));
   const lines = chosen.map(l => {
     const scales = Object.entries(l.scales).filter(([id]) => !l.hidden.includes(id)).map(([id, v]) => `${id}=${v}${describeScale(id, v)}`).join(',');
@@ -278,3 +280,23 @@ export function relationLines(rel, cast, { maxChars = 2500, memoryLimit = 3, ten
 }
 
 export const lineKey = (from, to) => `${from}>${to}`;
+
+/**
+ * Каждому герою из состава чата, кроме персоны и умерших, заводится линия «к персоне» (пустая, с основными шкалами на нуле):
+ * карточка чувств к игроку есть сразу, и Архивариус двигает её по ходу рассказа. Возвращает число новых линий.
+ * Чувств самой персоны здесь нет: линий «от персоны» не заводится никогда.
+ */
+export function ensurePersonaLines(state, newId) {
+  const persona = (state?.cast ?? []).find(p => p.persona);
+  if (!persona || !state.relations) return 0;
+  const dead = state.knowledge?.deaths ?? {};
+  let added = 0;
+  for (const p of state.cast) {
+    if (p.persona || dead[p.id]) continue;
+    if (state.relations.lines.some(l => l.from === p.id && l.to === persona.id)) continue;
+    if (state.relations.lines.length >= LIMITS.lines) break;
+    state.relations.lines.push({ id: newId('r'), from: p.id, to: persona.id, scales: {}, hidden: [], stage: '', goal: '', memories: [], tensions: [], factors: [] });
+    added += 1;
+  }
+  return added;
+}

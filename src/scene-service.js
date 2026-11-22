@@ -13,7 +13,7 @@ import { resolveTension, detectTension, clampLevel, detectCombat } from './core/
 import { buildLetterBlock, cleanLetter } from './core/letter.js';
 import { convertKulisy, questsFromKulisy, relationsFromKulisy, knowledgeFromKulisy } from './core/kulisy-import.js';
 import { knowledgeLines as buildKnowledgeLines, normalizeKnowledge, ACQUAINTANCE, pairKey, findLoreEvent, appendWatchLog } from './core/secrets.js';
-import { relationLines as buildRelationLines, normalizeRelations, SCALE_IDS, allPeople, lineKey, nameOf as personName } from './core/relations.js';
+import { relationLines as buildRelationLines, normalizeRelations, SCALE_IDS, allPeople, lineKey, ensurePersonaLines, nameOf as personName } from './core/relations.js';
 import { questLines as buildQuestLines, STATUSES, STATUS_RU, NEXT_LEAD, LEAD_STATES, isOpenStatus } from './core/journal.js';
 import { fateLines as buildFateLines, normalizeFate, detectAutoMode, parseCheck, rollCheck as rollCheckCore, checkDirective, CHECK_MODE_RU, OUTCOME_RU, CHECK_MODES, CHECK_KINDS, MODE_IDS, MODE_SETS, SET_IDS, modesOf, detectDailyMode, NUDGES, rollEvent, moveHeat, HEAT_NOTE_KINDS, heatPending, tagRu } from './core/fate.js';
 import { inventoryLines as buildInventoryLines, normalizeInventory, applyItemOp, undoItemOp, itemsOf } from './core/inventory.js';
@@ -103,6 +103,7 @@ export function startScene(deps) {
     const state = readState();
     if (!state) return false;
     fn(state);
+    ensurePersonaLines(state, newId);       // у каждого героя есть линия чувств к персоне по умолчанию
     persist(state);
     refreshPrompt();
     notify();
