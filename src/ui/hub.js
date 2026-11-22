@@ -54,7 +54,7 @@ export function startHub(deps) {
     root.style.setProperty('right', 'auto', 'important'); root.style.setProperty('bottom', 'auto', 'important');
   };
   const setSheet = on => { if (on) syncColors(); root.classList.toggle('sj-sheet', on); root.querySelector('.sj-hubfab')?.setAttribute('aria-expanded', String(on)); applyPos(); };
-  const stopMobile = onMobileChange(on => { if (on) root.dataset.mobile = '1'; else { delete root.dataset.mobile; setSheet(false); } applyPos(); });
+  const stopMobile = onMobileChange(on => { if (on) root.dataset.mobile = '1'; else { delete root.dataset.mobile; setSheet(false); } applyPos(); try { refresh(shared.scene?.get()); } catch { /* пульт ещё собирается */ } });
   const fabEl = root.querySelector('.sj-hubfab');
   let drag = null, moved = false;
   fabEl.addEventListener('pointerdown', e => {
@@ -90,7 +90,9 @@ export function startHub(deps) {
 
   // пульт виден, когда открыт чат и расширение включено
   const refresh = info => {
-    root.hidden = !(settings.enabled && settings.hub !== false && info?.hasChat);
+    // телефон: без кнопки «К» меню остаётся доступным из шторки (кнопка «Меню»), поэтому сам пульт не скрываем
+    root.hidden = !(settings.enabled && info?.hasChat && (settings.hub !== false || root.dataset.mobile));
+    root.classList.toggle('sj-nofab', settings.hub === false);
     // цвета пульта как у окон: по миру чата или по выбранной палитре (смена цвета в настройках находит его по data-world)
     syncColors();
     // разделы, которые человек отключил в настройках, пропадают из меню
@@ -100,9 +102,11 @@ export function startHub(deps) {
   };
   const unsubscribe = shared.scene?.subscribe(refresh);
   refresh(shared.scene?.get());
+  shared.ui = { ...(shared.ui ?? {}), openMenu: () => { if (root.dataset.mobile) setSheet(true); } };
 
   return () => {
     unsubscribe?.();
+    if (shared.ui) delete shared.ui.openMenu;
     stopMobile();
     window.removeEventListener('resize', applyPos);
     root.removeEventListener('click', onClick);

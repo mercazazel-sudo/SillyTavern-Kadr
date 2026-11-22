@@ -49,7 +49,7 @@ export function startCalendarWindow(deps) {
     }
     const head = cal.week.mode === 'tenday'
       ? Array.from({ length: len }, (_, i) => `<div class="sj-dow">${i + 1}</div>`).join('')
-      : cal.week.names.map(n => `<div class="sj-dow">${esc(n.ru)}<small>${esc(n.en)}</small></div>`).join('');
+      : cal.week.names.map(n => (document.documentElement.dataset.sjMobile ? `<div class="sj-dow">${esc(n.ru.slice(0, cal.week.names.length === 7 ? 2 : 3))}</div>` : `<div class="sj-dow">${esc(n.ru)}<small>${esc(n.en)}</small></div>`)).join('');
     const lead = cal.week.mode === 'tenday' ? 0 : weekdayOf(cal, view.year, startDoy(cal, view.year, index)) % len;
     let cells = '';
     for (let i = 0; i < lead; i++) cells += '<div class="sj-cell blank"></div>';
@@ -156,7 +156,7 @@ export function startCalendarWindow(deps) {
       <div class="sj-calhead">
         <div><div class="sj-calnow">Сегодня: <b>${esc(info.date.name)}</b>, ${info.date.year} ${esc(info.date.era)}${info.date.storyDay != null ? ` · <span class="sj-dayn">Д${info.date.storyDay}</span>` : ''}</div>
           <div class="sj-sub">${formatTime(info.time.minutes)}, ${partOfDay(info.time.minutes)}${info.date.season ? ' · ' + esc(info.date.season) : ''} · день года ${info.date.doy} из ${info.date.yearDays}</div></div>
-        <div class="sj-nav"><button class="sj-btn" data-act="prev" aria-label="Назад">‹</button><span class="sj-yr" title="${esc(cal.era.full)}">${view.year} ${esc(cal.era.ru)}</span><button class="sj-btn" data-act="next" aria-label="Вперёд">›</button><button class="sj-btn" data-act="today">сегодня</button></div>
+        <div class="sj-nav"><button class="sj-btn" data-act="prev" aria-label="Назад">‹</button><span class="sj-yr" title="${esc(cal.era.full)}">${document.documentElement.dataset.sjMobile ? `${esc(p.ru)}, ` : ''}${view.year} ${esc(cal.era.ru)}</span><button class="sj-btn" data-act="next" aria-label="Вперёд">›</button><button class="sj-btn" data-act="today">сегодня</button></div>
       </div>
       ${layersHtml}
       <div class="sj-calbody">
@@ -178,6 +178,8 @@ export function startCalendarWindow(deps) {
       </div>
       ${holidaysHtml(info, monthHol, p)}`;
     alignSide();
+    // телефон: выбранный месяц в ленте месяцев встаёт по центру
+    if (document.documentElement.dataset.sjMobile) { const rb = win.querySelector('.sj-ribbon'), cur = rb?.querySelector('.sj-seg2.view'); if (rb && cur) rb.scrollLeft = Math.max(0, cur.offsetLeft - rb.clientWidth / 2 + cur.offsetWidth / 2); }
   }
 
   /** Плашка справа начинается на одной линии с первой строкой ячеек, под строкой дней недели. */

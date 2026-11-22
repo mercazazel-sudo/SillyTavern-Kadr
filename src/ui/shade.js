@@ -7,7 +7,6 @@ import { esc } from './dom.js';
 import { formatTime, partOfDay, parseDuration } from '../core/clock.js';
 import { describeWeather } from '../core/weather.js';
 export { isMobileView } from './mobile.js';
-import { FEATURES } from '../core/features.js';
 
 const PART_ICON = Object.freeze({ ночь: '🌙', утро: '🌅', день: '☀️', вечер: '🌇' });
 export const partIcon = part => PART_ICON[part] ?? '☀️';
@@ -18,11 +17,6 @@ export function shortDate(name) {
   return String(name ?? '').split(/\s+/)[0].slice(0, 6);
 }
 const UNITS = [['m', 'мин'], ['h', 'ч'], ['d', 'дн']];
-
-const MENU = [
-  ['openState', 'Состояние'], ['openJournal', 'Журнал', 'showJournal'], ['openChronicle', 'Архивариус'], ['openMap', 'Карта', 'showMap'],
-  ['openRelations', 'Отношения'], ['openFate', 'd20 жизни', 'fate'], ['openCalendar', 'Календарь'], ['openCards', 'Анкеты'],
-];
 
 export function createShade({ strip, shared, settings = {} }) {
   const root = document.createElement('div');
@@ -80,8 +74,7 @@ export function createShade({ strip, shared, settings = {} }) {
           : '<div class="sj-sh-none" style="padding-top:6px">Никого не отмечено</div>'}
         <button type="button" class="sj-sh-state" data-state>Состояние</button>
       </div>
-      ${settings.hub === false ? `<div class="sj-sh-menu">${MENU.filter(([, , flag]) => flag !== 'fate' ? (!flag || settings[flag] !== false) : FEATURES.fate).map(([open, ru]) => `<button type="button" data-sopen="${open}">${ru}</button>`).join('')}</div>` : ''}
-      <div class="sj-sh-row2"><button type="button" class="sj-sh-full" data-scene>Обстановка</button><button type="button" class="sj-sh-full" data-sopen="openSettings">Настройки</button></div>`;
+      <div class="sj-sh-row2"><button type="button" class="sj-sh-full" data-scene>Обстановка</button><button type="button" class="sj-sh-full" data-sopen="openMenu">Меню</button></div>`;
   }
 
   function goForward() {

@@ -35,7 +35,10 @@ export function startSettingsWindow(deps) {
   let boundNames = null;      // лорбуки, привязанные к чату и персонажу (подгружаются при открытии вкладки)
 
   const fateFlag = (key, label) => `<label class="sj-chk"><input type="checkbox" data-fate="${key}" ${settings.fate[key] ? 'checked' : ''}><span>${esc(label)}</span></label>`;
-  const flag = (key, label) => `<label class="sj-chk"><input type="checkbox" data-flag="${key}" ${settings[key] ? 'checked' : ''}><span>${esc(label)}</span></label>`;
+  // нужна хотя бы одна точка входа: строка сцены или кнопка «К». Последнюю включённую выключить нельзя.
+  const lockedFlag = key => (key === 'strip' && settings.hub === false) || (key === 'hub' && settings.strip === false);
+  const LOCK_HINT = 'нельзя выключить: нужна хотя бы одна из двух, строка сцены или кнопка «К»';
+  const flag = (key, label) => `<label class="sj-chk${lockedFlag(key) ? ' locked' : ''}"${lockedFlag(key) ? ` title="${LOCK_HINT}"` : ''}><input type="checkbox" data-flag="${key}" ${settings[key] ? 'checked' : ''} ${lockedFlag(key) ? 'disabled' : ''}><span>${esc(label)}</span></label>`;
 
   const fateFlagsHtml = () => `${fateFlag('includePersona', 'Случайные события могут задеть персону')}${fateFlag('lethal', 'Допускать тяжёлые раны (по умолчанию не выше «ранен»)')}${fateFlag('avoidRepeat', 'Кубик интима не повторяет недавние варианты')}${fateFlag('autoMode', 'Режим «Бой» включается сам, когда в тексте боевые действия (напали, обнажил оружие, засада), а не от криков и тревоги')}${fateFlag('diceCheck', 'Броски d20: рассказчик сам просит бросок, когда исход зависит от удачи (уворот, обман, скрытность), кроме интимных сцен')}${fateFlag('autoWound', '…и при неудаче рана персоне записывается сама (с отменой)')}`;
 
@@ -126,7 +129,10 @@ export function startSettingsWindow(deps) {
   /** Телефон: строки настроек: короткое название, пояснение и переключатель справа. */
   const attrOf = { flag: 'data-flag', fate: 'data-fate', chron: 'data-chron', aux: 'data-auxflag' };
   const valueOf = (kind, key) => (kind === 'flag' ? settings[key] : kind === 'fate' ? settings.fate?.[key] : kind === 'chron' ? settings.chronicle?.[key] : settings.aux?.[key]);
-  const trow = (kind, key, title, hint = '') => `<label class="sj-trow"><span class="tx">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</span><input type="checkbox" ${attrOf[kind]}="${key}" ${valueOf(kind, key) ? 'checked' : ''}></label>`;
+  const trow = (kind, key, title, hint = '') => {
+    const locked = kind === 'flag' && lockedFlag(key);
+    return `<label class="sj-trow${locked ? ' locked' : ''}"><span class="tx">${esc(title)}${locked ? `<small>${LOCK_HINT}</small>` : hint ? `<small>${esc(hint)}</small>` : ''}</span><input type="checkbox" ${attrOf[kind]}="${key}" ${valueOf(kind, key) ? 'checked' : ''} ${locked ? 'disabled' : ''}></label>`;
+  };
   const STEPS = { stepMinutes: [0, 1440, 5], tensionDecay: [0, 20, 1], relationsBudget: [500, 12000, 250], knowledgeBudget: [300, 8000, 250], cardsBudget: [1000, 40000, 500] };
   const stepRow = (key, title, hint = '') => `<div class="sj-trow"><span class="tx">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</span><span class="sj-step"><button type="button" data-step="${key}" data-d="-1" aria-label="Меньше">−</button><b>${settings[key]}</b><button type="button" data-step="${key}" data-d="1" aria-label="Больше">+</button></span></div>`;
   const group = (title, rows, note = '') => `<div class="sj-sgrp">${title ? `<div class="gh">${esc(title)}</div>` : ''}${rows}${note ? `<div class="sj-snote">${esc(note)}</div>` : ''}</div>`;
@@ -166,7 +172,7 @@ export function startSettingsWindow(deps) {
         <div class="sj-smob"><input class="sj-ssearch" data-ssearch type="search" placeholder="Найти настройку" aria-label="Найти настройку" autocomplete="off">
         <div class="sj-slist">${sections.map(x => `<button type="button" class="sj-srow" data-spage="${x.id}" data-keys="${esc(`${x.title} ${x.sub} ${x.keys}`.toLowerCase())}"><span class="ic">${x.icon}</span><span class="tx"><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></span><span class="go">›</span></button>`).join('')}</div>
         <div class="sj-sub" data-snone hidden>Ничего не найдено.</div>
-        <div class="sj-lbl" style="margin-top:18px">Быстро</div>${group('', `${FEATURES.fate ? trow('fate', 'diceCheck', 'Проверки d20', 'рассказчик сам просит бросок') : ''}${trow('flag', 'strip', 'Строка сцены', 'над полем ввода')}${trow('chron', 'auto', 'Архивариус разбирает ответы')}`)}</div>`;
+        <div class="sj-lbl" style="margin-top:18px">Быстро</div>${group('', `${FEATURES.fate ? trow('fate', 'diceCheck', 'Проверки d20', 'рассказчик сам просит бросок') : ''}${trow('flag', 'strip', 'Строка сцены', 'над полем ввода')}${trow('flag', 'hub', 'Кнопка «К»', 'меню разделов')}${trow('chron', 'auto', 'Архивариус разбирает ответы')}`)}</div>`;
       return;
     }
     win.innerHTML = `<div class="sj-wh"><button class="sj-btn sj-back" data-spage="" aria-label="К разделам">‹</button><h2>${esc(cur.title)}</h2>${close}</div><div class="sj-smob">${cur.html}</div>`;
@@ -247,7 +253,13 @@ export function startSettingsWindow(deps) {
       else if (el.dataset.chronsel) shared.chronicle.setChronicle({ [el.dataset.chronsel]: el.value });
       else if (el.dataset.auxflag) shared.chronicle.setAux({ [el.dataset.auxflag]: el.checked });
       else if (el.dataset.chron) shared.chronicle.setChronicle({ [el.dataset.chron]: el.checked });
-      else if (el.dataset.flag) scene().setSetting(el.dataset.flag, el.checked);
+      else if (el.dataset.flag) {
+        const key = el.dataset.flag;
+        // страховка: нельзя остаться и без строки сцены, и без кнопки «К»
+        if (!el.checked && ((key === 'strip' && settings.hub === false) || (key === 'hub' && settings.strip === false))) { el.checked = true; return; }
+        scene().setSetting(key, el.checked);
+        if (key === 'strip' || key === 'hub') render();
+      }
       else if (el.dataset.num) scene().setSetting(el.dataset.num, clampNum(el.dataset.num, el.value));
       else if (el.dataset?.pbind !== undefined) { if (el.value) shared.scene?.setPersona(el.value); render(); }
     } catch (error) { report('настройки', error); }

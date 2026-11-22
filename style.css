@@ -1931,3 +1931,50 @@ html[data-sj-mobile] #sj-hub.sj-sheet .sj-hubicon.sj-off { display: none !import
 .sj-sh-menu button { min-height: 46px; padding: 6px 2px; border: 1px solid var(--line, #444); border-radius: 14px; background: var(--panel2, #242424); color: var(--text, #eee); font: inherit; font-size: 12.5px; line-height: 1.15; cursor: pointer; }
 .sj-sh-row2 { display: flex; gap: 8px; margin-bottom: 9px; }
 .sj-sh-row2 .sj-sh-full { flex: 1; margin-bottom: 0; border-radius: 14px; }
+#sj-hub.sj-nofab .sj-hubfab { display: none !important; }
+
+/* телефон: календарь компактнее */
+html[data-sj-mobile] #sj-calendar .sj-wh { align-items: center; }
+html[data-sj-mobile] #sj-calendar .sj-worldsel { flex: 1; margin: 0; justify-content: flex-end; font-size: 12px; }
+html[data-sj-mobile] #sj-calendar .sj-worldsel select { max-width: 150px; }
+html[data-sj-mobile] .sj-calhead { padding: 8px 12px; gap: 8px; }
+html[data-sj-mobile] .sj-calnow { font-size: 14.5px; }
+html[data-sj-mobile] .sj-calhead .sj-sub { font-size: 12px; }
+html[data-sj-mobile] .sj-nav { width: 100%; justify-content: space-between; }
+html[data-sj-mobile] .sj-nav .sj-yr { flex: 1; text-align: center; }
+html[data-sj-mobile] .sj-lays2 { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 8px 12px 2px; scrollbar-width: none; }
+html[data-sj-mobile] .sj-layc { flex: none; padding: 5px 11px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel2); font-size: 12.5px; white-space: nowrap; }
+html[data-sj-mobile] .sj-layc .sw { display: none; }
+html[data-sj-mobile] .sj-layc:has(input:checked) { border-color: var(--lc, var(--accent)); background: color-mix(in srgb, var(--lc, var(--accent)) 18%, var(--panel2)); }
+html[data-sj-mobile] .sj-calbody { gap: 10px; padding: 10px 12px 18px; grid-template-columns: 1fr; }
+html[data-sj-mobile] .sj-ctitle h3 { font-size: 20px; }
+html[data-sj-mobile] .sj-ctitle .en { display: none; }
+html[data-sj-mobile] .sj-cgrid { gap: 3px; margin-top: 6px; }
+html[data-sj-mobile] .sj-dow { font-size: 11px; padding: 0 0 2px; }
+html[data-sj-mobile] .sj-cell { min-height: 42px; padding: 3px 4px; border-radius: 10px; }
+html[data-sj-mobile] .sj-cell .n { font-size: 14px; }
+html[data-sj-mobile] .sj-cell .hn { display: none; }
+
+html[data-sj-mobile] .sj-ribcap { display: none; }
+html[data-sj-mobile] .sj-moonband { margin-top: 8px; padding: 8px 10px; border-radius: 14px; }
+html[data-sj-mobile] .sj-moonband h4 small { display: none; }
+html[data-sj-mobile] .sj-moons { gap: 2px; }
+html[data-sj-mobile] .sj-mn { width: 31px; }
+html[data-sj-mobile] .sj-moonrow .sj-moonlb small { display: none; }
+html[data-sj-mobile] .sj-hgrid { grid-template-columns: minmax(0, 1fr); }
+html[data-sj-mobile] .sj-cgrid > * { min-width: 0; }
+html[data-sj-mobile] .sj-cell { overflow: hidden; }
+html[data-sj-mobile] .sj-calbody, html[data-sj-mobile] .sj-cmain, html[data-sj-mobile] .sj-cside { min-width: 0; }
+html[data-sj-mobile] .sj-trow.locked, html[data-sj-mobile] .sj-chk.locked { opacity: .55; cursor: not-allowed; }
+.sj-chk.locked { opacity: .6; }
+
+/* телефон: лента месяцев строкой кнопок (класс sj-seg2 в календаре не то же, что переключатель вкладок) */
+html[data-sj-mobile] #sj-calendar .sj-ribbon { display: flex; height: auto; margin: 10px 0 0; padding: 0 0 2px; gap: 6px; border: 0; border-radius: 0; overflow-x: auto; scrollbar-width: none; background: none; }
+html[data-sj-mobile] #sj-calendar .sj-ribbon .sj-seg2 { position: relative; flex: 0 0 auto !important; width: auto !important; min-width: 52px; height: auto; margin: 0; padding: 9px 13px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel2); color: var(--muted); font: inherit; font-size: 13.5px; outline: 0; overflow: visible; }
+html[data-sj-mobile] #sj-calendar .sj-ribbon .sj-seg2.view { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 26%, var(--panel2)); color: var(--text); }
+html[data-sj-mobile] #sj-calendar .sj-ribbon .sj-seg2.fest { min-width: 0; background: color-mix(in srgb, var(--accent) 30%, var(--panel2)); }
+html[data-sj-mobile] #sj-calendar .sj-ribbon .sj-seg2.fest::before { content: "✦"; color: var(--text); }
+html[data-sj-mobile] #sj-calendar .sj-ribbon .sj-seg2 .mark { left: 28%; width: 44%; bottom: 3px; height: 3px; border-radius: 2px; }
+html[data-sj-mobile] #sj-calendar .sj-ribcap { display: none; }
+html[data-sj-mobile] .sj-cmain { display: flex; flex-direction: column; }
+html[data-sj-mobile] #sj-calendar .sj-ribbon { order: -1; margin: 6px 0 4px; }
