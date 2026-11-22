@@ -42,11 +42,45 @@ export function startChronicleWindow(deps) {
         <div class="sj-add"><button class="sj-btn sj-pri" data-act="digsave">Сохранить правку</button></div></div>`;
   }
 
+  // ---------- телефон: короткий экран, подробности под раскрывашками ----------
+  const isMobile = () => Boolean(document.documentElement.dataset.sjMobile);
+  const openSet = new Set();
+  win.addEventListener('toggle', e => { const k = e.target?.dataset?.cdk; if (k) { if (e.target.open) openSet.add(k); else openSet.delete(k); } }, true);
+  const cdet = (key, title, inner) => `<details class="sj-mdet2" data-cdk="${key}"${openSet.has(key) ? ' open' : ''}><summary>${title}</summary><div class="in">${inner}</div></details>`;
+  const DSTEPS = { keep: [2, 30, 1], batch: [2, 30, 1], words: [100, 1200, 50] };
+  const dstep = (key, title, hint, value) => `<div class="sj-trow"><span class="tx">${title}<small>${hint}</small></span><span class="sj-step"><button type="button" data-dstep="${key}" data-d="-1" aria-label="Меньше">−</button><b>${value}</b><button type="button" data-dstep="${key}" data-d="1" aria-label="Больше">+</button></span></div>`;
+  const dtog = (key, title, hint, on) => `<label class="sj-trow"><span class="tx">${title}<small>${hint}</small></span><input type="checkbox" data-dig="${key}" ${on ? 'checked' : ''}></label>`;
+
+  function renderMobile(info, ch) {
+    const d = shared.digest?.get();
+    const c = d?.cfg;
+    const props = ch.proposals.map(p => `<div class="sj-pcard"><div class="k">${KIND_RU[p.kind] ?? p.kind}</div><div class="t">${esc(p.label)}</div><div class="b"><button class="sj-btn sj-pri" data-ok="${esc(p.id)}">Записать</button><button class="sj-btn" data-no="${esc(p.id)}">Нет</button></div></div>`).join('');
+    const digest = d ? `<div class="sj-sgrp"><div class="gh">Сжатие контекста</div>
+        ${dtog('enabled', 'Сжимать старые сообщения', 'в запрос уходит короткая сводка «что было»', c.enabled)}
+        <div class="sj-snote" id="sj-digstat">${esc(digestStat(d))}</div>
+        <div class="sj-dact"><button class="sj-btn sj-pri" data-act="digrun">Сжать сейчас</button></div></div>
+      ${cdet('dset', 'Настройки сжатия', `${dtog('markHidden', 'Прятать сжатые сообщения', 'в чате у них значок «скрыто»', c.markHidden)}${dstep('keep', 'Оставлять последних', 'сообщений как есть', c.keep)}${dstep('batch', 'Сжимать пачкой от', 'сообщений: чем больше, тем реже запросы', c.batch)}${dstep('words', 'Длина сводки', 'слов, не больше', c.words)}
+        <div class="sj-add" style="margin-top:8px"><button class="sj-btn" data-act="digcond" title="Давние события остаются ключевыми моментами: сводка вдвое короче">Сжать сводку вдвое</button>${d.canUndo ? '<button class="sj-btn" data-act="digundo">Отменить сжатие</button>' : ''}<button class="sj-btn" data-act="digreset" title="Стереть сводку: весь чат снова пойдёт в запрос целиком">Сбросить сводку</button></div>
+        <label class="sj-trow" style="padding-left:0;padding-right:0"><span class="tx">Сводка покрывает до №<small>0: ничего; для сводки, написанной вручную</small></span><input type="number" data-digupto min="0" value="${d.covered}" style="width:84px"></label>`)}
+      ${cdet('dtext', 'Сводка, которая уходит рассказчику', `<textarea class="sj-mdesc" data-digtext rows="8" placeholder="Сводки пока нет" style="margin:0;width:100%">${esc(d.text)}</textarea><div class="sj-add"><button class="sj-btn sj-pri" data-act="digsave">Сохранить правку</button></div>`)}` : '';
+    const history = historyHtml();
+    win.innerHTML = `<div class="sj-wh"><h2>Архивариус</h2><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button><span class="sj-sub">${ch.ready ? (ch.auto ? 'разбирает ответы сам' : 'только по кнопке') : 'модель не настроена'}</span></div>
+      <div class="sj-cmob">
+        <button class="sj-btn sj-pri sj-bigbtn" data-act="run" ${ch.busy || !ch.ready ? 'disabled' : ''}>${ch.busy ? 'Разбираю…' : 'Разобрать последний ответ'}</button>
+        ${ch.ready ? '' : '<div class="sj-sub" style="margin:8px 0">Выберите вспомогательную модель: «Настройки», раздел «Архивариус».</div>'}
+        ${ch.note ? `<div class="sj-sub" style="margin:8px 2px">${esc(ch.note)}</div>` : ''}
+        <div class="sj-sgrp" style="margin-top:12px"><div class="gh">Предложения${ch.proposals.length ? ` · ${ch.proposals.length}` : ''}</div>${props || '<div class="sj-snote" style="border-top:0">Пока нет. Новые появятся после ответа рассказчика.</div>'}${ch.proposals.length > 1 ? '<div class="sj-dact"><button class="sj-btn sj-pri" data-act="all">Записать всё</button><button class="sj-btn" data-act="clear">Очистить</button></div>' : ''}</div>
+        ${digest}
+        ${history ? cdet('hist', 'История разбора', history) : ''}
+      </div>`;
+  }
+
   function render() {
     const info = shared.scene?.get();
     const ch = shared.chronicle?.get();
     if (!info?.hasChat || !ch) { shell.close(); return; }
     shell.theme(info.state.calendar);
+    if (isMobile()) { renderMobile(info, ch); return; }
     const rows = ch.proposals.map(p => `<div class="sj-prop"><span class="k">${KIND_RU[p.kind] ?? p.kind}</span><span class="t">${esc(p.label)}</span><span class="b"><button class="sj-btn sj-pri" data-ok="${esc(p.id)}">Записать</button><button class="sj-btn" data-no="${esc(p.id)}">Нет</button></span></div>`).join('');
     win.innerHTML = `<div class="sj-wh"><h2>Архивариус</h2><span class="sj-sub">${ch.ready ? (ch.auto ? 'разбирает ответы сам' : 'только по кнопке') : 'модель не настроена'}</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
       <div style="padding:12px 18px 16px">
@@ -77,6 +111,14 @@ export function startChronicleWindow(deps) {
 
   const onClick = event => {
     const t = event.target;
+    const stp = t.closest('[data-dstep]');
+    if (stp) {
+      const key = stp.dataset.dstep, [lo, hi, st] = DSTEPS[key];
+      const cur = Number(shared.digest?.get()?.cfg?.[key]) || lo;
+      try { shared.digest?.setOption({ [key]: Math.min(Math.max(cur + Number(stp.dataset.d) * st, lo), hi) }); } catch (e) { report('сжатие контекста', e); }
+      render();
+      return;
+    }
     const ok = t.closest('[data-ok]'); if (ok) return void shared.chronicle.apply(ok.dataset.ok);
     const no = t.closest('[data-no]'); if (no) return void shared.chronicle.dismiss(no.dataset.no);
     const act = t.closest('[data-act]')?.dataset.act;

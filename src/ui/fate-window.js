@@ -17,6 +17,7 @@ export function startFateWindow(deps) {
   let showIntimacy = false;
   let showMore = false;           // стрелочка «Ещё» у видов близости раскрыта (помнится между перерисовками)
   let woundNote = '';
+  let mTab = 'mode';              // телефон: вкладка «Режим / События / Интим»
 
   const stateLabel = (sent, pending) => (sent ? 'уже ушло с ответом' : pending ? 'уйдёт рассказчику с ближайшим ответом' : '');
 
@@ -96,12 +97,23 @@ export function startFateWindow(deps) {
     shell.theme(info.state.calendar);
     const tell = `<div class="sj-tell"><div class="sj-lbl">${settings.enabled && settings.sendFate ? 'Уйдёт рассказчику' : 'Не отправляется (выключено в настройках)'}</div>${info.fateLines.length ? `<pre>${info.fateLines.map(esc).join('\n')}</pre>` : '<div class="sj-sub">Сейчас ничего.</div>'}</div>`;
     const diceOn = settings.fate?.diceCheck !== false;
+    if (document.documentElement.dataset.sjMobile) {
+      const inIntim = info.fate.mode === 'intimacy' || Boolean(info.fate.heat);
+      const tabs = [['mode', 'Режим'], ['roll', 'События'], ['int', 'Интим']];
+      const body = mTab === 'int' ? intimacyHtml(info)
+        : mTab === 'roll' ? `${eventHtml(info)}${inIntim ? '<div class="sj-sub" style="margin-top:14px">В интимной сцене d20 не бросается.</div>' : checkHtml(info)}`
+          : modeHtml(info);
+      win.innerHTML = `<div class="sj-wh"><h2>d20 жизни</h2><label class="sj-chk sj-tgl sj-fatetgl" title="Рассказчик сам просит бросок d20, когда исход зависит от удачи. В интимной сцене проверки не бросаются."><input type="checkbox" role="switch" data-dicecheck ${diceOn ? 'checked' : ''}><i aria-hidden="true"></i><span>Проверки d20<small>${diceOn ? 'сам просит бросок' : 'выключены'}</small></span></label><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
+        <div class="sj-fmob"><div class="sj-seg2" role="tablist">${tabs.map(([id, ru]) => `<button data-ftab="${id}" role="tab" aria-pressed="${mTab === id}">${ru}</button>`).join('')}</div>${body}${tell}</div>`;
+      return;
+    }
     win.innerHTML = `<div class="sj-wh"><h2>d20 жизни</h2><span class="sj-sub">режим, события, броски, интим</span><label class="sj-chk sj-tgl sj-fatetgl" title="Рассказчик сам просит бросок d20 (уворот, обман, скрытность), когда исход зависит от удачи. В интимной сцене проверки не бросаются в любом случае."><input type="checkbox" role="switch" data-dicecheck ${diceOn ? 'checked' : ''}><i aria-hidden="true"></i><span>Случайные проверки d20<small>${diceOn ? 'рассказчик просит бросок сам' : 'выключены'}</small></span></label><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
       <div style="padding:12px 18px 16px">${modeHtml(info)}${eventHtml(info)}${info.fate.mode === 'intimacy' || info.fate.heat ? '<div class="sj-sub" style="margin-top:14px">В интимной сцене d20 не бросается.</div>' : checkHtml(info)}${intimacyHtml(info)}${tell}</div>`;
   }
 
   const onClick = event => {
     const t = event.target;
+    const ftab = t.closest('[data-ftab]'); if (ftab) { mTab = ftab.dataset.ftab; render(); return; }
     const mode = t.closest('[data-mode]'); if (mode) { const cur = scene().get().fate.mode; scene().setMode(cur === mode.dataset.mode ? '' : mode.dataset.mode); return; }
     const modeSet = t.closest('[data-modeset]'); if (modeSet) { scene().setModeSet(modeSet.dataset.modeset); return; }
     const nudge = t.closest('[data-nudge]'); if (nudge) { scene().pressNudge(nudge.dataset.nudge); return; }

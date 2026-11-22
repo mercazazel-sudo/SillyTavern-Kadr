@@ -299,6 +299,7 @@ export function startMapWindow(deps) {
     const nodes = info.placeNodes;
     if (selected && !nodes.some(n => n.id === selected)) selected = '';
     if (path && !nodes.some(n => n.id === path)) path = '';
+    if (isMobile()) { renderMobile(info); return; }
     const q = search.trim().toLowerCase();
     const sel = selected ? nodes.find(n => n.id === selected) : null;
     const grp = !sel && path ? nodes.find(n => n.id === path) : null;
@@ -311,6 +312,76 @@ export function startMapWindow(deps) {
     const viewSw = `<span class="sj-viewsw" role="group" aria-label="Вид"><button type="button" data-view="wiki" aria-pressed="${view === 'wiki'}">Вики</button><button type="button" data-view="list" aria-pressed="${view === 'list'}">Список</button><button type="button" data-view="tiles" aria-pressed="${view === 'tiles'}">Плитки</button></span>`;
     win.innerHTML = `<div class="sj-wh"><h2>Карта</h2><span class="sj-sub">${cur ? `сцена: ${esc(pathOf(nodes, cur.id))}` : 'текущее место не выбрано'}${note ? ` · ${esc(note)}` : ''}</span>${viewSw}<button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
       ${view === 'list' ? `<div class="sj-mapbody wiki">${kulisy}${listHtml(info)}</div>` : view === 'wiki' ? `<div class="sj-mapbody wiki">${kulisy}${wikiHtml(info)}</div>` : `<div class="sj-mapbody"><div class="sj-maptop">${back}<input data-search value="${esc(search)}" placeholder="Поиск места" aria-label="Поиск">${crumbs}</div>${kulisy}${body}</div>`}`;
+  }
+
+  // ---------- телефон: один простой список, карточка места с раскрывающимися разделами ----------
+  const isMobile = () => Boolean(document.documentElement.dataset.sjMobile);
+  const mdOpen = new Set();          // раскрытые разделы карточки (помнятся между перерисовками)
+  win.addEventListener('toggle', e => { const k = e.target?.dataset?.mdk; if (k) { if (e.target.open) mdOpen.add(k); else mdOpen.delete(k); } }, true);
+  const mtog = (on, title, sub, attrs) => `<div class="sj-trow sj-mtog" role="switch" tabindex="0" aria-checked="${on}" ${attrs}><span class="tx">${title}<small>${sub}</small></span><span class="sj-sw2 big${on ? ' on' : ''}"><i></i></span></div>`;
+  const mdet = (key, title, inner) => `<details class="sj-mdet2" data-mdk="${key}"${mdOpen.has(key) ? ' open' : ''}><summary>${title}</summary><div class="in">${inner}</div></details>`;
+
+  function mobileRow(info, n) {
+    const isFolder = n.kind === 'folder';
+    const kids = childrenOf(info.placeNodes, n.id);
+    const here = info.map.current === n.id;
+    const off = has(info, 'off', n.id);
+    const sub = isFolder ? (kids.length ? `внутри: ${kids.length}` : 'пусто') : snippet(n.description, 70);
+    return `<button type="button" class="sj-mrow${here ? ' here' : ''}${off ? ' off' : ''}" data-open="${esc(n.id)}"><span class="ico${n.image ? ' photo' : ''}">${n.image ? `<img src="${esc(n.image)}" alt="" loading="lazy">` : isFolder ? ICON_FOLDER : ICON_PLACE}</span><span class="tx"><b>${esc(n.name)}</b><small>${esc(sub)}${n.danger ? `${sub ? ' · ' : ''}опасно` : ''}</small></span>${here ? '<span class="bd">здесь</span>' : ''}<span class="go">›</span></button>`;
+  }
+
+  function mobilePlace(info, n) {
+    const nodes = info.placeNodes;
+    const o = info.map.over[n.id] ?? { traits: [], notes: [] };
+    const isHere = info.map.current === n.id;
+    const cardOn = !has(info, 'off', n.id);
+    const kids = childrenOf(nodes, n.id).sort(byName);
+    const links = (info.placeLinks ?? []).filter(l => l.placeId === n.id);
+    const traits = (n.local ? '' : listHtmlChips(n.traits, 'traits', 'library', true)) + listHtmlChips(n.local ? n.traits : o.traits, 'traits', 'chat', true);
+    const notes = listHtmlChips(n.local ? n.notes : o.notes, 'notes', 'chat', true);
+    const sent = info.placeLines.length && isHere ? `<div class="sj-tell"><div class="sj-lbl">Уйдёт рассказчику</div><pre>${esc(info.placeLines.join('\n'))}</pre></div>` : '';
+    return `${n.image ? `<div class="sj-mpic"><img src="${esc(n.image)}" alt="${esc(n.name)}"></div>` : ''}
+      <div class="sj-sgrp">${mtog(isHere, 'Сейчас здесь', 'герои тут: место становится местом сцены', 'data-act="heretoggle"')}${mtog(cardOn, 'Рассказчик знает', 'карточка и записи лорбука уходят в запрос', `data-cardtoggle="${esc(n.id)}"`)}</div>
+      <div class="sj-sgrp"><div class="gh">Описание</div><textarea class="sj-mdesc" data-pdesc rows="5" aria-label="Описание">${esc(n.description ?? '')}</textarea></div>
+      ${kids.length ? `<div class="sj-sgrp"><div class="gh">Внутри</div>${kids.map(k => mobileRow(info, k)).join('')}</div>` : ''}
+      ${mdet('traits', `Приметы${(n.local ? n.traits : [...n.traits, ...o.traits]).length ? ` · ${(n.local ? n.traits : [...n.traits, ...o.traits]).length}` : ''}`, `${traits}<div class="sj-add"><input data-newtrait placeholder="мост из тросов, выжженная трава…" aria-label="Примета"><select data-traitscope style="width:auto"><option value="chat">в этом чате</option>${n.local ? '' : '<option value="library">в библиотеку</option>'}</select><button class="sj-btn" data-act="addtrait">+</button></div>`)}
+      ${mdet('notes', `Перемены${(n.local ? n.notes : o.notes).length ? ` · ${(n.local ? n.notes : o.notes).length}` : ''}`, `${notes}<div class="sj-add"><input data-newnote placeholder="мост обрушился, дверь сожжена…" aria-label="Перемена"><button class="sj-btn" data-act="addnote">+</button></div>`)}
+      ${mdet('lore', `Из лорбука${links.length ? ` · ${links.length}` : ''}`, loreHtml(info, n))}
+      ${mdet('place', 'Название, расположение, удаление', `<input class="sj-nm" data-pname value="${esc(n.name)}" aria-label="Название">${settingsHtml(info, n)}<div class="sj-add"><label class="sj-btn">${n.image ? 'Сменить картинку' : 'Загрузить картинку'}<input type="file" accept="image/*" data-pimg hidden></label>${n.image ? '<button class="sj-btn" data-act="noimg">Убрать картинку</button>' : ''}<button class="sj-btn" data-act="addin">+ подместо</button></div>`)}
+      ${sent}`;
+  }
+
+  function renderMobile(info) {
+    const nodes = info.placeNodes;
+    const q = search.trim().toLowerCase();
+    const sel = selected ? nodes.find(n => n.id === selected) : null;
+    const grp = !sel && path ? nodes.find(n => n.id === path) : null;
+    const cur = info.map.current ? nodes.find(n => n.id === info.map.current) : null;
+    const plan = scene().previewKulisyMap?.();
+    const kulisy = plan && (plan.freshLib || plan.chatPlaces) ? `<button class="sj-btn sj-pri" data-act="import" style="width:100%;margin-bottom:8px">Перенести из Кулис</button>` : '';
+    const title = sel ? sel.name : grp ? grp.name : 'Карта';
+    const back = !q && (sel || grp) ? '<button class="sj-btn sj-back" data-act="back" aria-label="Назад">‹</button>' : '';
+    const subtitle = sel || grp ? pathOf(nodes, (sel ?? grp).id) : (cur ? `сцена: ${pathOf(nodes, cur.id)}` : 'место сцены не выбрано');
+    let body;
+    if (q) {
+      const found = nodes.filter(n => matches(n, q)).sort(byName);
+      body = found.length ? `<div class="sj-sgrp">${found.map(n => mobileRow(info, n)).join('')}</div>` : '<div class="sj-none">Ничего не нашлось.</div>';
+    } else if (sel) {
+      body = mobilePlace(info, sel);
+    } else {
+      const items = (grp ? childrenOf(nodes, grp.id) : nodes.filter(x => !x.parentId || !nodes.some(y => y.id === x.parentId))).sort(byName);
+      const inner = grp ? descendantsOf(nodes, grp.id).filter(x => x.kind !== 'folder') : [];
+      const groupOn = inner.some(x => !(info.map.off ?? []).includes(x.id));
+      const nowBtn = cur && (!grp || cur.id !== grp.id) ? `<button type="button" class="sj-mnow" data-open="${esc(cur.id)}"><span>Сцена сейчас</span><b>${esc(cur.name)}</b><span class="go">›</span></button>` : '';
+      const more = `${(info.map.off ?? []).length ? '<button class="sj-btn" data-act="allon">Включить все карточки</button>' : ''}<button class="sj-btn" data-act="placefile">Импорт из файла</button><button class="sj-btn" data-act="renest">Вложенность из Кулис</button>`;
+      body = `${kulisy}${nowBtn}${grp && inner.length ? `<div class="sj-sgrp">${mtog(groupOn, 'Рассказчик знает места группы', groupOn ? `выключит все ${inner.length} разом` : `включит все ${inner.length} разом`, `data-cardtoggle="${esc(grp.id)}"`)}</div>` : ''}
+        ${items.length ? `<div class="sj-sgrp">${items.map(n => mobileRow(info, n)).join('')}</div>` : `<div class="sj-none">${grp ? 'Здесь пока пусто.' : 'Мест пока нет.'} Кнопки ниже добавят первое.</div>`}
+        <div class="sj-add" style="margin-top:4px"><button class="sj-btn sj-pri" data-act="newplace">+ Место</button><button class="sj-btn" data-act="newfolder">+ Группа</button></div>
+        ${mdet('more', 'Ещё', `<div class="sj-add">${more}</div>`)}
+        ${grp ? mdet('grp', 'Название и удаление группы', `<input class="sj-nm" data-pname value="${esc(grp.name)}" aria-label="Название группы">${settingsHtml(info, grp)}`) : ''}`;
+    }
+    win.innerHTML = `<div class="sj-wh">${back}<h2>${esc(title)}</h2><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button><span class="sj-sub">${esc(subtitle)}${note ? ` · ${esc(note)}` : ''}</span></div>
+      <div class="sj-mapm">${sel ? '' : `<input class="sj-ssearch" data-search value="${esc(search)}" placeholder="Найти место" aria-label="Найти место" type="search" autocomplete="off">`}${body}</div>`;
   }
 
   /** Скрытое поле выбора файла для «Импорт из файла…»: читает places.json, показывает, что изменится, и спрашивает подтверждение. */

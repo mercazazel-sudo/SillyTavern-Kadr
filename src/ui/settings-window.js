@@ -11,6 +11,7 @@ import { formatTime } from '../core/clock.js';
 import { describeWeather } from '../core/weather.js';
 import { diagnosticsHtml, changesHtml, sentHtml } from './diagnostics.js';
 import { FEATURES } from '../core/features.js';
+import { D20_SVG } from './d20-icon.js';
 
 // «Основные настройки»: как работает расширение. «Данные»: что уходит модели и как идут запросы.
 const MAIN_GROUPS = [
@@ -34,6 +35,19 @@ export function startSettingsWindow(deps) {
 
   const fateFlag = (key, label) => `<label class="sj-chk"><input type="checkbox" data-fate="${key}" ${settings.fate[key] ? 'checked' : ''}><span>${esc(label)}</span></label>`;
   const flag = (key, label) => `<label class="sj-chk"><input type="checkbox" data-flag="${key}" ${settings[key] ? 'checked' : ''}><span>${esc(label)}</span></label>`;
+
+  const fateFlagsHtml = () => `${fateFlag('includePersona', 'Случайные события могут задеть персону')}${fateFlag('lethal', 'Допускать тяжёлые раны (по умолчанию не выше «ранен»)')}${fateFlag('avoidRepeat', 'Кубик интима не повторяет недавние варианты')}${fateFlag('autoMode', 'Режим «Бой» включается сам, когда в тексте боевые действия (напали, обнажил оружие, засада), а не от криков и тревоги')}${fateFlag('diceCheck', 'Броски d20: рассказчик сам просит бросок, когда исход зависит от удачи (уворот, обман, скрытность), кроме интимных сцен')}${fateFlag('autoWound', '…и при неудаче рана персоне записывается сама (с отменой)')}`;
+
+  const timeHtml = () => `<label class="sj-chk"><input type="checkbox" data-flag="autoStep" ${settings.autoStep ? 'checked' : ''}><span>Время идёт само: каждый ответ прибавляет</span><input type="number" data-num="stepMinutes" min="0" max="1440" value="${settings.stepMinutes}" aria-label="минут на ответ" style="width:64px"><span>мин.</span></label>
+<label class="sj-chk"><span>Напряжение остывает на ступень каждые</span><input type="number" data-num="tensionDecay" min="0" max="20" value="${settings.tensionDecay}" aria-label="ответов до остывания" style="width:64px"><span>отв. (0 = не остывает)</span></label>`;
+
+  const sizesHtml = info => {
+    const cards = shared.cards?.get();
+    return `<div class="sj-sub" style="margin-bottom:8px">Сейчас уходит: блок сцены около ${Math.round((info.block ?? '').length / 3)} ток.${cards?.hasChat ? `, анкеты около ${cards.sentTokens} ток.` : ''}</div>`;
+  };
+  const budgetsHtml = () => `<div class="sj-lbl" style="margin-top:14px">Вес промпта (знаков; токенов примерно треть)</div>
+<label class="sj-chk"><span>Отношения</span><input type="number" data-budget="relationsBudget" min="500" max="12000" step="250" value="${settings.relationsBudget}" style="width:90px"><span>тайны</span><input type="number" data-budget="knowledgeBudget" min="300" max="8000" step="250" value="${settings.knowledgeBudget}" style="width:90px"></label>
+<label class="sj-chk"><span>Бюджет анкет в запросе</span><input type="number" data-num="cardsBudget" min="1000" max="40000" step="500" value="${settings.cardsBudget}" aria-label="знаков" style="width:90px"><span>знаков (около трети от этого в токенах)</span></label>`;
 
   function kulisyHtml() {
     const plan = scene()?.previewKulisy?.();
@@ -104,17 +118,69 @@ export function startSettingsWindow(deps) {
       ${kulisyHtml()}`;
   }
 
+  const isMobile = () => Boolean(document.documentElement.dataset.sjMobile);
+  let page = '';              // телефон: открытый раздел настроек ('' = список разделов)
+  const flagsOf = items => items.map(([k, l]) => flag(k, l)).join('');
+
+  /** Телефон: строки настроек: короткое название, пояснение и переключатель справа. */
+  const attrOf = { flag: 'data-flag', fate: 'data-fate', chron: 'data-chron', aux: 'data-auxflag' };
+  const valueOf = (kind, key) => (kind === 'flag' ? settings[key] : kind === 'fate' ? settings.fate?.[key] : kind === 'chron' ? settings.chronicle?.[key] : settings.aux?.[key]);
+  const trow = (kind, key, title, hint = '') => `<label class="sj-trow"><span class="tx">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</span><input type="checkbox" ${attrOf[kind]}="${key}" ${valueOf(kind, key) ? 'checked' : ''}></label>`;
+  const STEPS = { stepMinutes: [0, 1440, 5], tensionDecay: [0, 20, 1], relationsBudget: [500, 12000, 250], knowledgeBudget: [300, 8000, 250], cardsBudget: [1000, 40000, 500] };
+  const stepRow = (key, title, hint = '') => `<div class="sj-trow"><span class="tx">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</span><span class="sj-step"><button type="button" data-step="${key}" data-d="-1" aria-label="Меньше">−</button><b>${settings[key]}</b><button type="button" data-step="${key}" data-d="1" aria-label="Больше">+</button></span></div>`;
+  const group = (title, rows, note = '') => `<div class="sj-sgrp">${title ? `<div class="gh">${esc(title)}</div>` : ''}${rows}${note ? `<div class="sj-snote">${esc(note)}</div>` : ''}</div>`;
+
+  function mobileSections(info) {
+    const setup = '<div class="sj-add" style="margin-bottom:8px"><button class="sj-btn" data-act="setup" title="Персона, мир и первый день, лорбуки: пошаговая настройка">Мастер первой настройки</button></div>';
+    const connect = chronicleHtml().split('<label class="sj-chk" style="margin-top:8px">')[0];
+    const tasks = [['auto', 'Разбирать каждый ответ', 'фильтры отсекают пустые'], ['journal', 'Журнал', 'записи, зацепки, новые квесты'], ['scene', 'Кто в кадре', 'приход и уход людей по тексту'], ['relations', 'Отношения', 'сдвиги шкал и воспоминания'], ['items', 'Вещи', 'кто что взял, отдал, потерял'], ['body', 'Приметы и раны', 'следы, мокрая одежда, ссадины, раны'], ['place', 'Место', 'где сцена, находки и перемены']];
+    if (FEATURES.secrets) tasks.push(['know', 'Знания', 'кто что узнал, знакомства, гибель']);
+    const applyNow = [['autoApplyScene', 'Состав сцены'], ['autoApplyRelations', 'Отношения'], ['autoApplyItems', 'Вещи'], ['autoApplyBody', 'Приметы и раны'], ['autoApplyPlace', 'Место'], ['autoApplyJournal', 'Записи журнала', 'новые квесты только по подтверждению']];
+    if (FEATURES.secrets) applyNow.splice(5, 0, ['autoApplyKnow', 'Знания']);
+    return [
+      { id: 'look', icon: '◐', title: 'Внешний вид', sub: 'цвет окон, строка сцены', keys: 'цвет палитра тема строка счётчик дней',
+        html: `${group('Цвет окон', themesHtml())}${group('Строка сцены', `${trow('flag', 'strip', 'Строка у поля ввода', 'время, дата и режим над полем ввода')}${trow('flag', 'dayCounter', 'Счётчик дней', 'Д1, Д2… в шторке строки')}`)}` },
+      { id: 'teller', icon: '✉', title: 'Что видит рассказчик', sub: 'какие блоки уходят в запрос', keys: 'рассказчик запрос блок время место праздник квесты кадр отношения тайны анкеты раны вещи погода напряжение карточка правила вес бюджет токены',
+        html: `${sizesHtml(info)}${group('Мир', `${trow('flag', 'sendBlock', 'Время и место', 'дата, время суток, где сцена')}${trow('flag', 'sendHolidays', 'Праздник дня')}${trow('flag', 'sendQuests', 'Идущие квесты')}${trow('flag', 'sendWeather', 'Погода')}${trow('flag', 'sendTension', 'Напряжение', 'на «спокойно» не отправляется')}`)}${group('Люди', `${trow('flag', 'sendCast', 'Кто в кадре')}${trow('flag', 'sendRelations', 'Отношения', 'только тех, кто в кадре')}${trow('flag', 'sendCards', 'Анкеты', 'заменяют записи лорбука')}${trow('flag', 'sendBody', 'Состояние и раны', 'тех, кто в кадре')}${trow('flag', 'sendInventory', 'Вещи', 'тех, кто в кадре')}${FEATURES.secrets ? trow('flag', 'sendKnowledge', 'Тайны', 'кто что знает, знакомства, погибшие') : ''}`)}${group('Сцена', `${FEATURES.fate ? trow('flag', 'sendFate', 'd20 жизни', 'режим, подсказки, броски') : ''}${trow('flag', 'sendPlaces', 'Карточка места')}${trow('flag', 'shortRules', 'Краткие правила', 'легче промпт на ~550 токенов, но правила короче')}`)}${group('Вес запроса, знаков', `${stepRow('relationsBudget', 'Отношения')}${FEATURES.secrets ? stepRow('knowledgeBudget', 'Тайны') : ''}${stepRow('cardsBudget', 'Анкеты', 'токенов примерно треть')}`)}` },
+      { id: 'arch', icon: '✎', title: 'Архивариус', sub: 'вспомогательная модель, что разбирать', keys: 'архивариус модель запросы профиль ключ задачи журнал отношения вещи раны место',
+        html: `${group('Подключение', connect)}${group('Что разбирать по тексту', tasks.map(([k, t, h]) => trow('chron', k, t, h)).join('') + trow('chron', 'itemsAlways', 'Искать вещи в каждом ответе', 'полнее, но на один запрос больше'))}${group('Применять сразу, без подтверждения', applyNow.map(([k, t, h]) => trow('chron', k, t, h)).join(''), 'Любое изменение можно отменить.')}` },
+      { id: 'time', icon: '◷', title: 'Время и погода', sub: 'шаг времени, погода, напряжение', keys: 'время погода напряжение шаг остывает',
+        html: `${group('Время', `${trow('flag', 'autoStep', 'Время идёт само', 'каждый ответ прибавляет минуты')}${stepRow('stepMinutes', 'Минут за ответ')}`)}${group('Погода', `${trow('flag', 'weather', 'Погода по сезону и климату')}${trow('flag', 'weatherFromText', 'Менять по тексту', '«пошёл дождь»')}`)}${group('Напряжение', `${trow('flag', 'tension', 'Шкала напряжения')}${trow('flag', 'tensionFromText', 'Сдвигать по тексту')}${stepRow('tensionDecay', 'Остывает за, ответов', '0: не остывает')}`)}` },
+      FEATURES.fate ? { id: 'd20', icon: D20_SVG, title: 'd20 жизни', sub: 'события, раны, броски', keys: 'd20 кубик броски раны события бой интим',
+        html: group('Броски и события', `${trow('fate', 'diceCheck', 'Проверки d20', 'рассказчик сам просит бросок, кроме интимных сцен')}${trow('fate', 'autoWound', 'Рана при неудаче', 'записывается сама, с отменой')}${trow('fate', 'includePersona', 'События могут задеть персону')}${trow('fate', 'lethal', 'Тяжёлые раны', 'по умолчанию не выше «ранен»')}`) + group('Режимы', `${trow('fate', 'autoMode', 'Бой включается сам', 'по боевым действиям в тексте')}${trow('fate', 'avoidRepeat', 'Интим без повторов', 'кубик не повторяет недавние варианты')}`) } : null,
+      { id: 'chat', icon: '⚑', title: 'Этот чат', sub: 'персона, лорбуки, перенос', keys: 'чат персона лорбуки кулисы перенос мастер',
+        html: `${setup}${chatHtml(info)}${group('Лорбуки', `${boundHtml().split('<label class="sj-chk">')[0]}${trow('flag', 'cardsOnlyBound', 'Только привязанные лорбуки', 'рекомендуется')}${trow('flag', 'personaBookStrict', 'Лорбук персоны только с привязанной персоной')}`)}` },
+      { id: 'data', icon: '≡', title: 'Запросы и ошибки', sub: 'что ушло модели, журнал', keys: 'запросы ошибки журнал диагностика отправлено', html: `${sentHtml(info, settings, shared)}<div style="height:14px"></div>${changesHtml(info)}<div style="height:14px"></div>${diagnosticsHtml(shared)}` },
+    ].filter(Boolean);
+  }
+
+  function renderMobile(info) {
+    const sections = mobileSections(info);
+    const cur = sections.find(x => x.id === page);
+    if (!cur) page = '';
+    const close = '<button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button>';
+    if (!cur) {
+      win.innerHTML = `<div class="sj-wh"><h2>Настройки</h2><span class="sj-sub">Кадр</span>${close}</div>
+        <div class="sj-smob"><input class="sj-ssearch" data-ssearch type="search" placeholder="Найти настройку" aria-label="Найти настройку" autocomplete="off">
+        <div class="sj-slist">${sections.map(x => `<button type="button" class="sj-srow" data-spage="${x.id}" data-keys="${esc(`${x.title} ${x.sub} ${x.keys}`.toLowerCase())}"><span class="ic">${x.icon}</span><span class="tx"><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></span><span class="go">›</span></button>`).join('')}</div>
+        <div class="sj-sub" data-snone hidden>Ничего не найдено.</div>
+        <div class="sj-lbl" style="margin-top:18px">Быстро</div>${group('', `${FEATURES.fate ? trow('fate', 'diceCheck', 'Проверки d20', 'рассказчик сам просит бросок') : ''}${trow('flag', 'strip', 'Строка сцены', 'над полем ввода')}${trow('chron', 'auto', 'Архивариус разбирает ответы')}`)}</div>`;
+      return;
+    }
+    win.innerHTML = `<div class="sj-wh"><button class="sj-btn sj-back" data-spage="" aria-label="К разделам">‹</button><h2>${esc(cur.title)}</h2>${close}</div><div class="sj-smob">${cur.html}</div>`;
+  }
+
   function render() {
     const info = scene()?.get();
     if (!info?.hasChat) { shell.close(); return; }
     shell.theme(info.state.calendar);
+    if (isMobile()) { renderMobile(info); return; }
     const tabs = `<div class="sj-filters" style="padding:0 18px 4px"><button class="sj-tab" data-stab="main" aria-pressed="${tab === 'main'}">Основные настройки</button><button class="sj-tab" data-stab="data" aria-pressed="${tab === 'data'}">Данные</button></div>`;
     win.innerHTML = `<div class="sj-wh"><h2>Настройки</h2><span class="sj-sub">Кадр</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>${tabs}
       <div class="sj-sbody">${tab === 'data' ? dataHtml(info) : mainHtml(info)}</div>`;
   }
 
-  /** Основные настройки: слева как расширение работает, справа модель Архивариуса, лорбуки, персона и чат. */
-  function mainHtml(info) {
+  function themesHtml() {
     const cur = getTheme();
     const vars = p => `--p:${p.panel};--p2:${p.panel2};--l:${p.line};--t:${p.text};--m:${p.muted};--a:${p.accent}`;
     const mock = '<span class="sj-pal-mock"><i></i><b></b><b></b><u></u></span>';
@@ -127,14 +193,19 @@ export function startSettingsWindow(deps) {
           <div class="sj-pal custom${cur === CUSTOM ? ' on' : ''}" role="radio" tabindex="0" aria-checked="${cur === CUSTOM}" data-theme="${CUSTOM}" style="${vars(customP)}">${mock}<span class="sj-pal-name">Свой цвет</span>
             <label class="sj-pal-pick" title="Выбрать цвет"><input type="color" data-themecolor value="${esc(getColor())}" aria-label="Свой цвет"><span data-themehex>${esc(getColor())}</span></label><span class="sj-pal-ck" aria-hidden="true">✓</span></div>
         </div>`;
+    return themes;
+  }
+
+  /** Основные настройки: слева как расширение работает, справа модель Архивариуса, лорбуки, персона и чат. */
+  function mainHtml(info) {
+    const themes = themesHtml();
     return `<div class="sj-scol">
         <div class="sj-add" style="margin-bottom:10px"><button class="sj-btn" data-act="setup" title="Персона, мир и первый день, лорбуки: пошаговая настройка">Мастер первой настройки</button></div>
         ${themes}
         ${MAIN_GROUPS.map(([title, items]) => `<div class="sj-lbl" style="margin-top:10px">${title}</div>${items.map(([k, l]) => flag(k, l)).join('')}`).join('')}
-        ${FEATURES.fate ? `<div class="sj-lbl" style="margin-top:10px">d20 жизни</div>${fateFlag('includePersona', 'Случайные события могут задеть персону')}${fateFlag('lethal', 'Допускать тяжёлые раны (по умолчанию не выше «ранен»)')}${fateFlag('avoidRepeat', 'Кубик интима не повторяет недавние варианты')}${fateFlag('autoMode', 'Режим «Бой» включается сам, когда в тексте боевые действия (напали, обнажил оружие, засада), а не от криков и тревоги')}${fateFlag('diceCheck', 'Броски d20: рассказчик сам просит бросок, когда исход зависит от удачи (уворот, обман, скрытность), кроме интимных сцен')}${fateFlag('autoWound', '…и при неудаче рана персоне записывается сама (с отменой)')}` : ''}
+        ${FEATURES.fate ? `<div class="sj-lbl" style="margin-top:10px">d20 жизни</div>${fateFlagsHtml()}` : ''}
         <div class="sj-lbl" style="margin-top:10px">Время и напряжение</div>
-        <label class="sj-chk"><input type="checkbox" data-flag="autoStep" ${settings.autoStep ? 'checked' : ''}><span>Время идёт само: каждый ответ прибавляет</span><input type="number" data-num="stepMinutes" min="0" max="1440" value="${settings.stepMinutes}" aria-label="минут на ответ" style="width:64px"><span>мин.</span></label>
-        <label class="sj-chk"><span>Напряжение остывает на ступень каждые</span><input type="number" data-num="tensionDecay" min="0" max="20" value="${settings.tensionDecay}" aria-label="ответов до остывания" style="width:64px"><span>отв. (0 = не остывает)</span></label>
+        ${timeHtml()}
         ${boundHtml()}
       </div><div class="sj-scol">${chronicleHtml()}<div style="height:14px"></div>${chatHtml(info)}</div>`;
   }
@@ -153,13 +224,10 @@ export function startSettingsWindow(deps) {
 
   /** Данные: что уходит модели (по блокам, с весом) и запросы с ошибками. */
   function dataHtml(info) {
-    const cards = shared.cards?.get();
-    const sizes = `<div class="sj-sub" style="margin-bottom:8px">Сейчас уходит: блок сцены около ${Math.round((info.block ?? '').length / 3)} ток.${cards?.hasChat ? `, анкеты около ${cards.sentTokens} ток.` : ''}</div>`;
+    const sizes = sizesHtml(info);
     return `<div class="sj-scol">
         ${DATA_GROUPS.map(([title, items]) => `<div class="sj-lbl" style="margin-top:10px">${title}</div>${sizes}${items.filter(([k]) => (k !== 'sendKnowledge' || FEATURES.secrets) && (k !== 'sendFate' || FEATURES.fate)).map(([k, l]) => flag(k, l)).join('')}`).join('')}
-        <div class="sj-lbl" style="margin-top:14px">Вес промпта (знаков; токенов примерно треть)</div>
-        <label class="sj-chk"><span>Отношения</span><input type="number" data-budget="relationsBudget" min="500" max="12000" step="250" value="${settings.relationsBudget}" style="width:90px"><span>тайны</span><input type="number" data-budget="knowledgeBudget" min="300" max="8000" step="250" value="${settings.knowledgeBudget}" style="width:90px"></label>
-        <label class="sj-chk"><span>Бюджет анкет в запросе</span><input type="number" data-num="cardsBudget" min="1000" max="40000" step="500" value="${settings.cardsBudget}" aria-label="знаков" style="width:90px"><span>знаков (около трети от этого в токенах)</span></label>
+        ${budgetsHtml()}
       </div><div class="sj-scol">${sentHtml(info, settings, shared)}<div style="height:14px"></div>${changesHtml(info)}<div style="height:14px"></div>${diagnosticsHtml(shared)}</div>`;
   }
 
@@ -183,6 +251,16 @@ export function startSettingsWindow(deps) {
     } catch (error) { report('настройки', error); }
   };
   const onClick = event => {
+    const stp = event.target.closest('[data-step]');
+    if (stp) {
+      const key = stp.dataset.step, [lo, hi, st] = STEPS[key];
+      const next = Math.min(Math.max(Math.round((Number(settings[key]) || 0) + Number(stp.dataset.d) * st), lo), hi);
+      try { scene().setSetting(key, next); } catch (error) { report('настройки', error); }
+      render();
+      return;
+    }
+    const sp = event.target.closest('[data-spage]');
+    if (sp) { page = sp.dataset.spage; render(); win.parentElement?.scrollTo?.(0, 0); if (page === 'chat') loadBound(); return; }
     const th = event.target.closest('[data-theme]');
     if (th) {
       settings.theme = th.dataset.theme;
@@ -224,12 +302,21 @@ export function startSettingsWindow(deps) {
     boundNames = null;
     const pending = shared.cards?.boundBooks?.();
     if (!pending) { boundNames = []; return; }
-    pending.then(list => { boundNames = list ?? ['все лорбуки (ограничение снято)']; if (shell.isOpen && tab === 'main') render(); }).catch(() => { boundNames = []; });
+    pending.then(list => { boundNames = list ?? ['все лорбуки (ограничение снято)']; if (shell.isOpen && (isMobile() ? page === 'chat' : tab === 'main')) render(); }).catch(() => { boundNames = []; });
   }
   /** Подсветка выбранной карточки без перерисовки окна. */
   const markPalette = () => { const cur = getTheme(); for (const el of win.querySelectorAll('[data-theme]')) { const on = el.dataset.theme === cur; el.classList.toggle('on', on); el.setAttribute('aria-checked', String(on)); } };
   /** «Свой цвет»: пока тянут по палитре, краска меняется вживую, окно не перерисовывается. */
   const onInput = event => {
+    const sq = event.target.closest?.('[data-ssearch]');
+    if (sq) {
+      const v = sq.value.trim().toLowerCase();
+      let shown = 0;
+      for (const row of win.querySelectorAll('.sj-srow')) { const hit = !v || row.dataset.keys.includes(v); row.hidden = !hit; if (hit) shown += 1; }
+      const none = win.querySelector('[data-snone]');
+      if (none) none.hidden = shown > 0;
+      return;
+    }
     const el = event.target.closest?.('[data-themecolor]');
     if (!el) return;
     settings.themeColor = el.value; settings.theme = CUSTOM;
@@ -255,6 +342,7 @@ export function startSettingsWindow(deps) {
     const info = scene()?.get();
     if (!info?.hasChat) return;
     importNote = '';
+    page = '';
     shell.show(info.state.calendar);
     render();
     loadBound();
@@ -263,7 +351,7 @@ export function startSettingsWindow(deps) {
 
   // на вкладке «Данные» запросы и ошибки обновляются сами, пока не печатаешь в поле
   const timer = setInterval(() => {
-    if (!shell.isOpen || tab !== 'data') return;
+    if (!shell.isOpen || (isMobile() ? page !== 'data' : tab !== 'data')) return;
     if (win.contains(document.activeElement) && /^(INPUT|SELECT)$/.test(document.activeElement.tagName)) return;
     try { render(); } catch { /* окно закрывается */ }
   }, 3000);

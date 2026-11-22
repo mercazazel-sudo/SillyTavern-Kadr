@@ -11,6 +11,9 @@ import { rollCheckWithDice } from './dice-roll.js';
 import { personaPhoto as personaPhotoByName } from './photo.js';
 import { formatTime, partOfDay } from '../core/clock.js';
 import { KINDS, describeWeather } from '../core/weather.js';
+import { FEATURES } from '../core/features.js';
+import { createShade, partIcon, shortDate } from './shade.js';
+import { onMobileChange } from './mobile.js';
 
 export async function startStrip(deps) {
   const { settings, shared } = deps;
@@ -25,6 +28,8 @@ export async function startStrip(deps) {
   strip.setAttribute('aria-label', 'Открыть окно «Обстановка»');
   host.insertBefore(strip, send);   // сразу над рамкой поля ввода, под плашками других расширений
 
+  const shade = createShade({ strip, shared });
+  const stopMobile = onMobileChange(on => { if (on) strip.dataset.mobile = '1'; else { delete strip.dataset.mobile; shade.close(); } });
   let lastHtml = '';
   function render(info = shared.scene?.get()) {
     const visible = settings.enabled && settings.strip && info?.hasChat;
@@ -50,7 +55,8 @@ export async function startStrip(deps) {
     const fmMode = info.fate?.mode ? (info.fate.mode === 'intimacy' ? { icon: '💕', ru: 'Интим' } : modesOf(info.fate.set).find(m => m.id === info.fate.mode)) : null;
     const fm = fmMode ? `${fmMode.icon} ${fmMode.ru}` : '';
     const fatePending = Boolean(info.fate && ((info.fate.event && !info.fate.event.sent) || heatPending(info.fate.heat)));
-    const mode = fm || fatePending ? `<span class="sj-md${fatePending ? ' pend' : ''}" role="button" tabindex="0" data-fate="1" title="d20 жизни${fatePending ? ': подсказка ждёт следующего ответа' : ''}">${fm ? esc(fm) : D20_SVG}${fatePending && fm ? ' •' : ''}</span>` : '';
+    const mode = fm || fatePending ? `<span class="sj-md${fatePending ? ' pend' : ''}" role="button" tabindex="0" data-fate="1" title="d20 жизни${fatePending ? ': подсказка ждёт следующего ответа' : ''}">${fm ? `<span class="sj-mi">${esc(fmMode.icon)}</span><span class="sj-mw"> ${esc(fmMode.ru)}</span>` : D20_SVG}${fatePending && fm ? ' •' : ''}</span>` : '';
+    const diceBtn = FEATURES.fate && !mode ? `<span class="sj-md sj-md0" role="button" tabindex="0" data-fate="1" title="d20 жизни">${D20_SVG}</span>` : '';
     const pmis = info.personaMismatch ? `<span class="sj-pw" role="button" tabindex="0" data-pw="1" title="В Таверне персона «${esc(info.personaMismatch.tavern)}», а в чате привязана «${esc(info.personaMismatch.bound)}». Нажмите, чтобы выбрать.">⚠ персона</span>` : '';
     // фото персоны из Таверны: выбранная персона в списке персон, иначе аватар последнего её сообщения
     const personaPhoto = () => {
@@ -78,10 +84,10 @@ export async function startStrip(deps) {
     const OUT = { dodge: ['уворот', 'ok'], 'crit-dodge': ['идеальный уворот', 'ok'], hit: ['ранен', 'bad'], 'crit-hit': ['тяжело ранен', 'bad'], success: ['удалось', 'ok'], 'crit-success': ['блестяще', 'ok'], fail: ['не удалось', 'bad'], 'crit-fail': ['провал', 'bad'] };
     const dice = chk && !chk.roll ? `<span class="sj-dice" role="button" tabindex="0" data-dice="1" title="${chk.kind === 'skill' ? `Бросить d20: меньше ${chk.dc} значит не вышло, не меньше значит удалось. ${esc(chk.label)}` : `Бросить d20: меньше ${chk.dc} значит ранят, не меньше значит увернулись; 1 это тяжёлая рана. ${esc(chk.label)}`}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/><path d="M12 7.2l4.6 8H7.4z"/><path d="M12 2.5v4.7M20.2 7.25L12 7.2M3.8 7.25L12 7.2M20.2 7.25l-3.6 7.95M3.8 7.25l3.6 7.95M20.2 16.75l-3.6-1.55M3.8 16.75l3.6-1.55M12 21.5l4.6-6.3M12 21.5l-4.6-6.3"/></svg><b>${chk.dc}</b>${chk.mode === 'advantage' ? '<i title="преимущество">▲</i>' : chk.mode === 'disadvantage' ? '<i title="помеха">▼</i>' : ''}<span>бросить куб</span></span>`
       : chk?.roll ? `<span class="sj-dres ${OUT[chk.roll.outcome][1]}" title="${esc(chk.label)}: сложность ${chk.dc}, выпало ${chk.roll.roll}${chk.roll.dice.length > 1 ? ` (${chk.roll.dice.join(', ')})` : ''}">${D20_SVG} ${chk.roll.roll} · ${OUT[chk.roll.outcome][0]}</span>` : '';
-    const html = `<span class="sj-t">${formatTime(time.minutes)}</span><span class="sj-part" data-p="${part}">${part}</span>
+    const html = `<span class="sj-t">${formatTime(time.minutes)}</span><span class="sj-pe" title="${part}">${partIcon(part)}</span><span class="sj-ds">${esc(shortDate(date.name))}</span><span class="sj-part" data-p="${part}">${part}</span>
       <span class="sj-vs"></span><span class="sj-d">${dayBadge}${esc(date.name)}<span class="sj-sub"> · ${date.year} ${esc(date.era)}</span>${holiday}</span>${weather}
       <span class="sj-vs"></span><span class="sj-place${here ? '' : ' sj-none'}">${here ? esc(here) : 'место не задано'}</span>${avatars}
-      ${pmis}${dice}${trk}${mode}${tension}${chron}${envelope}${camp}
+      ${pmis}${dice}${trk}${mode}${diceBtn}${tension}${chron}${envelope}${camp}
       <span class="sj-open" aria-hidden="true">▾</span>`;
     strip.dataset.world = state.calendar;
     strip.dataset.cal = themeFor(state.calendar);
@@ -94,7 +100,7 @@ export async function startStrip(deps) {
     if (!m) return;
     if (window.confirm(`В Таверне сейчас персона «${m.tavern}», а в этом чате привязана «${m.bound}».\n\nОК: переключить чат на «${m.tavern}».\nОтмена: оставить «${m.bound}» (предупреждение для «${m.tavern}» больше не покажется).`)) shared.scene.switchPersona(); else shared.scene.keepPersona();
   };
-  const open = event => { const dz = event?.target?.closest?.('[data-dice]'); if (dz) { if (!rollCheckWithDice({ scene: shared.scene, fromEl: dz })) shared.scene?.rollCheck(); return; } const av = event?.target?.closest?.('[data-av]'); if (av) return shared.ui?.openState?.(av.dataset.av); if (event?.target?.closest?.('[data-camp]')) { shared.scene?.pressNudge('rest'); return; } if (event?.target?.closest?.('[data-pw]')) return choosePersona(); if (event?.target?.closest?.('[data-env]')) shared.ui?.openLetter?.(); else if (event?.target?.closest?.('[data-chr]')) shared.ui?.openChronicle?.(); else if (event?.target?.closest?.('[data-fate]')) shared.ui?.openFate?.(); else shared.ui?.openScene?.(); };
+  const open = event => { const dz = event?.target?.closest?.('[data-dice]'); if (dz) { if (!rollCheckWithDice({ scene: shared.scene, fromEl: dz })) shared.scene?.rollCheck(); return; } const av = event?.target?.closest?.('[data-av]'); if (av) return shared.ui?.openState?.(av.dataset.av); if (event?.target?.closest?.('[data-camp]')) { shared.scene?.pressNudge('rest'); return; } if (event?.target?.closest?.('[data-pw]')) return choosePersona(); if (event?.target?.closest?.('[data-env]')) shared.ui?.openLetter?.(); else if (event?.target?.closest?.('[data-chr]')) shared.ui?.openChronicle?.(); else if (event?.target?.closest?.('[data-fate]')) shared.ui?.openFate?.(); else if (strip.dataset.mobile) shade.toggle(); else shared.ui?.openScene?.(); };
   const onKey = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(event); } };
   strip.addEventListener('click', open);
   strip.addEventListener('keydown', onKey);
@@ -109,6 +115,8 @@ export async function startStrip(deps) {
     unsubscribeCards?.();
     strip.removeEventListener('click', open);
     strip.removeEventListener('keydown', onKey);
+    stopMobile();
+    shade.destroy();
     strip.remove();
   };
 }

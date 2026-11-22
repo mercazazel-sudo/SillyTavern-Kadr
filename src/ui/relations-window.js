@@ -13,10 +13,12 @@ export function startRelationsWindow(deps) {
   const shell = createShell({ id: 'sj-relations', label: 'Отношения', width: 1120 });
   const { win } = shell;
   let selected = '';
+  let showAll = false;         // телефон: по умолчанию только те, кто в кадре или с линиями
   let dir = 'out';             // out: что выбранный чувствует; in: что чувствуют к нему (у персоны всегда in)
   let wasPersona = false;
   let open = '';               // id раскрытой линии
   let importNote = '';
+  let detOpen = false;         // телефон: раскрыт ли блок «Хедканоны · треугольники · что изменилось само»
   const extra = new Map();     // id линии → шкалы, добавленные кнопкой «+» (живут, пока окно не закрыто)
 
   const scaleRu = id => SCALES.find(s => s.id === id)?.ru ?? id;
@@ -68,7 +70,10 @@ export function startRelationsWindow(deps) {
 
   function sideHtml(info) {
     const goneIds = info.knowledge.deaths ?? {};
-    const rows = [...info.people].sort((a, b) => Number(Boolean(goneIds[a.id])) - Number(Boolean(goneIds[b.id]))).map(p => {
+    const mobile = Boolean(document.documentElement.dataset.sjMobile);
+    const linesOf = p => info.relations.lines.filter(l => (p.persona ? l.to : l.from) === p.id).length;
+    const hiddenN = mobile && !showAll ? info.people.filter(p => !p.present && !linesOf(p) && p.id !== selected).length : 0;
+    const rows = [...info.people].filter(p => !(mobile && !showAll && !p.present && !linesOf(p) && p.id !== selected)).sort((a, b) => Number(Boolean(goneIds[a.id])) - Number(Boolean(goneIds[b.id]))).map(p => {
       const dead = Boolean(goneIds[p.id]);
       const n = info.relations.lines.filter(l => (p.persona ? l.to : l.from) === p.id).length;
       return `<button class="sj-q${p.present ? '' : ' away'}${dead ? ' dead' : ''}" data-person="${esc(p.id)}" aria-current="${p.id === selected}"><span class="ic">${dead ? '✕' : p.present ? '●' : '○'}</span><span class="nm">${esc(p.name)}${p.persona ? ' <small>(вы)</small>' : ''}</span><span class="meta">${n ? (p.persona ? `чувств к вам: ${n}` : `чувств: ${n}`) : 'нет линий'}${dead ? ' · умер, не учитывается' : p.present ? '' : ' · не в кадре'}</span></button>`;
@@ -76,7 +81,8 @@ export function startRelationsWindow(deps) {
     const plan = scene().previewKulisyRelations?.();
     const kulisy = plan && plan.lines.length
       ? `<div class="sj-import"><div class="sj-sub">У Кулис в этом чате линий: ${plan.lines.length}${plan.freshLines !== plan.lines.length ? `, новых: ${plan.freshLines}` : ''}.</div>${plan.freshLines || plan.freshHeadcanons ? `<div class="sj-sub">${plan.freshHeadcanons ? `Хедканонов к переносу: ${plan.freshHeadcanons}.` : ''}</div><button class="sj-btn sj-pri" data-act="import">Перенести из Кулис</button>` : ''}</div>` : '';
-    return `${rows || '<div class="sj-none">Участников нет.</div>'}
+    const more = hiddenN ? `<button class="sj-btn" data-act="showall" style="width:100%;margin-top:6px">Показать остальных (${hiddenN})</button>` : '';
+    return `${rows || '<div class="sj-none">Участников нет.</div>'}${more}
       <div class="sj-add" style="margin-top:8px"><input id="sj-newperson" placeholder="Человек вне сцены…" aria-label="Новый человек"><button class="sj-btn" data-act="addperson">+</button></div>
       ${kulisy}${importNote ? `<div class="sj-sub" style="margin-top:6px">${esc(importNote)}</div>` : ''}`;
   }
@@ -124,6 +130,54 @@ export function startRelationsWindow(deps) {
       <div class="sj-tell"><div class="sj-lbl">${settings.enabled && settings.sendRelations ? 'Уйдёт рассказчику' : 'Не отправляется (выключено в настройках)'}</div>${info.relationLines.length ? `<pre>${esc(info.relationLines.join('\n'))}</pre>` : '<div class="sj-sub">Сейчас ничего: нужны линии между теми, кто в кадре.</div>'}</div>`;
   }
 
+  const isMobile = () => Boolean(document.documentElement.dataset.sjMobile);
+
+  /** Телефон: четыре основные шкалы полосками, подробности открываются по нажатию на карточку. */
+  function barsHtml(line) {
+    const main = MAIN_SCALES.map(id => SCALES.find(x => x.id === id)).filter(Boolean);
+    return `<div class="sj-mm">${main.map(x => {
+      const v = line.scales[x.id] ?? 0;
+      const bad = DARK_SCALES.has(x.id) || v < 0;
+      return `<div class="sj-m4"><span>${esc(x.ru)} ${sign(v)}</span><div class="t"><i class="${bad ? 'bad' : ''}" style="width:${Math.max(2, Math.min(100, Math.abs(v)))}%"></i></div></div>`;
+    }).join('')}</div>`;
+  }
+
+  function lineMobile(info, line) {
+    const other = dir === 'out' ? line.to : line.from;
+    const name = nameOf(other, info.cast, info.relations) || other;
+    const sent = info.relationLines.some(l => l.startsWith(`${nameOf(line.from, info.cast, info.relations)}>${nameOf(line.to, info.cast, info.relations)};`));
+    const isOpen = open === line.id;
+    return `<div class="sj-rcard sj-mc${isOpen ? ' open' : ''}" data-lid="${esc(line.id)}"><button class="sj-rhead" data-line="${esc(line.id)}" aria-expanded="${isOpen}"><span class="who">${dir === 'out' ? '→' : '←'} ${esc(name)}</span><span class="stage">${esc(line.stage)}</span><span class="more"><span class="sj-sent${sent ? ' on' : ''}" title="${sent ? 'Уходит рассказчику' : 'Не уходит: кого-то из пары нет в кадре'}">${sent ? '✉' : '·'}</span> ${isOpen ? '▴' : '▾'}</span></button>${isOpen ? `<div class="sj-rbody">${scaleRows(line)}</div>${editorHtml(line)}` : barsHtml(line)}</div>`;
+  }
+
+  function renderMobile(info) {
+    const goneIds = info.knowledge.deaths ?? {};
+    const linesOf = p => info.relations.lines.filter(l => (p.persona ? l.to : l.from) === p.id).length;
+    const skip = p => !showAll && !p.present && !linesOf(p) && p.id !== selected;
+    const photoOf = new Map((shared.cards?.get()?.cards ?? []).filter(x => x.person && x.image).map(x => [x.person.id, x.image]));
+    const hiddenN = info.people.filter(skip).length;
+    const faces = [...info.people].filter(p => !skip(p)).sort((a, b) => Number(Boolean(goneIds[a.id])) - Number(Boolean(goneIds[b.id]))).map(p => {
+      const img = photoOf.get(p.id);
+      return `<button type="button" class="sj-fc${p.id === selected ? ' sel' : ''}${goneIds[p.id] ? ' dead' : ''}${p.present ? '' : ' away'}" data-person="${esc(p.id)}"><i>${img ? `<img src="${esc(img)}" alt="">` : esc(String(p.name).trim().charAt(0).toUpperCase())}</i><span>${esc(p.name)}</span></button>`;
+    }).join('');
+    const moreBtn = hiddenN ? `<button type="button" class="sj-fc" data-act="showall" aria-label="Показать остальных"><i>+${hiddenN}</i><span>ещё</span></button>` : '';
+    const person = info.people.find(p => p.id === selected);
+    const lines = person ? info.relations.lines.filter(l => (dir === 'out' ? l.from : l.to) === person.id) : [];
+    const have = new Set(lines.map(l => (dir === 'out' ? l.to : l.from)));
+    const options = person ? info.people.filter(p => p.id !== person.id && !have.has(p.id)).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('') : '';
+    const sub = !person ? '' : person.persona ? 'что чувствуют к вам' : dir === 'out' ? `что чувствует ${person.name}` : `что чувствуют к ${person.name}`;
+    const seg = person && !person.persona ? `<div class="sj-seg2"><button data-dir="out" aria-pressed="${dir === 'out'}">Что чувствует</button><button data-dir="in" aria-pressed="${dir === 'in'}">К нему</button></div>` : '';
+    const plan = scene().previewKulisyRelations?.();
+    const kulisy = plan && plan.lines.length && (plan.freshLines || plan.freshHeadcanons) ? `<button class="sj-btn sj-pri" data-act="import" style="margin-top:6px">Перенести из Кулис</button>` : '';
+    win.innerHTML = `<div class="sj-wh"><h2>Отношения</h2><span class="sj-sub">${esc(sub)}</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
+      <div class="sj-rmob"><div class="sj-faces">${faces}${moreBtn}</div>${seg}
+      <div>${lines.map(l => lineMobile(info, l)).join('') || '<div class="sj-none">Линий нет.</div>'}</div>
+      ${options ? `<div class="sj-add"><select id="sj-newline" aria-label="Новая линия">${options}</select><button class="sj-btn sj-pri" data-act="addline">${dir === 'out' ? 'Добавить линию' : 'Добавить, что к нему'}</button></div>` : ''}
+      ${person ? `<details class="sj-mdet"${detOpen ? ' open' : ''}><summary>Хедканоны · треугольники · что изменилось само</summary>${headcanonsHtml(info, person)}${trianglesHtml(info)}${logHtml(info)}
+        <div class="sj-lbl" style="margin-top:12px">Человек вне сцены</div><div class="sj-add"><input id="sj-newperson" placeholder="Имя" aria-label="Новый человек"><button class="sj-btn" data-act="addperson">+</button></div>${kulisy}${importNote ? `<div class="sj-sub" style="margin-top:6px">${esc(importNote)}</div>` : ''}</details>
+      <div class="sj-tell"><div class="sj-lbl">${settings.enabled && settings.sendRelations ? 'Уйдёт рассказчику' : 'Не отправляется (выключено в настройках)'}</div>${info.relationLines.length ? `<pre>${esc(info.relationLines.join('\n'))}</pre>` : '<div class="sj-sub">Сейчас ничего: нужны линии между теми, кто в кадре.</div>'}</div>` : ''}</div>`;
+  }
+
   function render() {
     const info = scene()?.get();
     if (!info?.hasChat) { shell.close(); return; }
@@ -132,11 +186,13 @@ export function startRelationsWindow(deps) {
     const isPersona = Boolean(info.people.find(p => p.id === selected)?.persona);
     if (isPersona) dir = 'in'; else if (wasPersona) dir = 'out';
     wasPersona = isPersona;
+    if (isMobile()) { renderMobile(info); return; }
     win.innerHTML = `<div class="sj-wh"><h2>Отношения</h2><span class="sj-sub">чувства, стадии, воспоминания</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
       <div class="sj-jbody"><div class="sj-jside">${sideHtml(info)}</div><div class="sj-jpage">${pageHtml(info)}</div></div>`;
   }
 
   const q = sel => win.querySelector(sel);
+  win.addEventListener('toggle', e => { if (e.target?.matches?.('.sj-mdet')) detOpen = e.target.open; }, true);
   const onClick = event => {
     const t = event.target;
     const person = t.closest('[data-person]'); if (person) { selected = person.dataset.person; open = ''; return render(); }
@@ -165,6 +221,7 @@ export function startRelationsWindow(deps) {
       return;
     }
     if (act === 'addfactor') { const box = q('[data-ftext]'); if (!scene().addFactor(open, q('[data-fscale]').value, q('[data-fdir]').value, box.value)) box.classList.add('sj-bad'); return; }
+    if (act === 'showall') { showAll = true; render(); return; }
     if (act === 'addperson') { const box = q('#sj-newperson'); const id = scene().addPerson(box.value); if (id) selected = id; else box.classList.add('sj-bad'); return; }
     if (act === 'addhc') { const box = q('#sj-hc-text'); if (!scene().addHeadcanon(selected, q('#sj-hc-who').value, box.value)) box.classList.add('sj-bad'); return; }
     if (act === 'addtri') { if (!scene().addTriangle(q('#sj-t-c').value, q('#sj-t-a').value, q('#sj-t-b').value)) q('#sj-t-b').classList.add('sj-bad'); return; }

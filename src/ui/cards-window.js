@@ -239,12 +239,88 @@ export function startCardsWindow(deps) {
     return `<div class="sj-tell"><div class="sj-lbl">${settings.enabled && d.enabled ? 'Уйдёт рассказчику с ближайшим ответом' : 'Не отправляется (выключено в настройках)'} · около ${d.sentTokens} токенов</div>${lines || '<div class="sj-sub">Пока ничего: подключите карточки и поставьте персонажей в кадр.</div>'}${d.dropped.length ? `<div class="sj-sub" style="color:#d98a4a">Не влезло в бюджет: ${esc(d.dropped.join('; '))}</div>` : ''}</div>`;
   }
 
+  // ---------- телефон: список анкет, затем карточка с раскрывающимися разделами ----------
+  const isMobile = () => Boolean(document.documentElement.dataset.sjMobile);
+  let mCard = false;                 // телефон: открыта ли карточка (иначе список)
+  const openC = new Set();           // раскрытые разделы карточки
+  win.addEventListener('toggle', e => { const k = e.target?.dataset?.ck; if (k) { if (e.target.open) openC.add(k); else openC.delete(k); } }, true);
+  const mdetC = (key, title, inner) => `<details class="sj-mdet2" data-ck="${key}"${openC.has(key) ? ' open' : ''}><summary>${title}</summary><div class="in">${inner}</div></details>`;
+
+  function mobileList(d) {
+    const info = shared.scene?.get();
+    const q = search.trim().toLowerCase();
+    const pool = shown(d);
+    const count = t => pool.filter(x => (x.tier ?? 'main') === t).length;
+    const list = pool.filter(x => (x.tier ?? 'main') === tier && (!q || x.name.toLowerCase().includes(q) || x.aliases.some(a => a.toLowerCase().includes(q))));
+    const dead = new Map(list.map(x => [x.id, isDead(x, info)]));
+    list.sort((a, b) => Number(dead.get(a.id)) - Number(dead.get(b.id)));
+    const rows = list.map(x => `<button type="button" class="sj-mrow sj-crow${dead.get(x.id) ? ' dead' : ''}" data-card="${esc(x.id)}"><span class="ico photo">${x.image ? `<img src="${esc(x.image)}" alt="">` : esc(initial(x.name))}</span><span class="tx"><b>${esc(x.name)}</b><small>${dead.get(x.id) ? 'умер · ' : ''}${x.idle ? 'лорбук не привязан · ' : ''}${x.tokens} ток.${x.person?.present ? ' · в кадре' : ''}</small></span><span class="go">›</span></button>`).join('');
+    const scope = d.hasChat ? '' : '<div class="sj-sub" style="margin-bottom:8px">Откройте чат: у каждого чата свои анкеты.</div>';
+    const gather = `<div class="sj-add" style="flex-direction:column;align-items:stretch">${tier === 'main'
+      ? '<button class="sj-btn sj-pri" data-act="importall">Собрать основных из всех лорбуков</button>'
+      : '<button class="sj-btn sj-pri" data-act="minor">Собрать из NPC-лорбуков</button>'}<button class="sj-btn" data-act="reloadall">Обновить все из лорбука</button><button class="sj-btn" data-act="import">Из одного лорбука</button></div>`;
+    return `${scope}<div class="sj-seg2"><button data-tier="main" aria-pressed="${tier === 'main'}">Основные · ${count('main')}</button><button data-tier="minor" aria-pressed="${tier === 'minor'}">Второстепенные · ${count('minor')}</button></div>
+      <input class="sj-ssearch" data-search value="${esc(search)}" placeholder="Поиск по имени" aria-label="Поиск" type="search" autocomplete="off">
+      ${rows ? `<div class="sj-sgrp">${rows}</div>` : `<div class="sj-none" style="padding:8px">${tier === 'main' ? 'Основных анкет пока нет. «Собрать основных» найдёт записи вида «[ Имя ] - Раздел».' : 'Второстепенных пока нет.'}</div>`}
+      <div class="sj-add" style="margin:4px 0 8px"><button class="sj-btn sj-pri" data-act="new">+ Новая анкета</button></div>
+      ${mdetC('gather', 'Собрать из лорбуков', gather)}`;
+  }
+
+  function mobileCard(d) {
+    const c = d.cards.find(x => x.id === selected);
+    if (!c) return '<div class="sj-none">Анкета не выбрана.</div>';
+    const info = shared.scene?.get();
+    const person = personOf(c), dead = isDead(c);
+    const sentNow = d.sent.find(p => p.id === c.id);
+    const w = wikiOf(c);
+    const parts = splitSections(c.sections);
+    const ru = lang === 'ru';
+    const rh = c.ru?.head;
+    const plan = ru ? api().translatePlan(c.id) : { blocks: [], edited: 0 };
+    const minor = (c.tier ?? 'main') === 'minor';
+    const status = dead ? '<span class="wk-state dead">умер</span>' : c.person?.present ? '<span class="wk-state">в кадре</span>' : person ? '<span class="wk-state off">не в кадре</span>' : '<span class="wk-state off">в чате не отмечен</span>';
+    const hero = `<div class="sj-hero"><label class="ph" title="Загрузить фото">${c.image ? `<img src="${esc(c.image)}" alt="${esc(c.name)}">` : `<span>${esc(initial(c.name))}</span>`}<input type="file" accept="image/*" data-photo hidden></label><div class="hd"><h1>${esc(c.name)}</h1><div class="chips">${status}<span class="wk-pill">${c.tokens} ток.${sentNow ? ` · уходит ${sentNow.sections.reduce((n, x) => n + x.tokens, 0)}` : ''}</span></div>${w.tagline ? `<div class="sj-sub">${esc((ru && rh?.tagline) || w.tagline)}</div>` : ''}</div></div>`;
+    const leadText = ru ? (rh?.lead || w.lead) : w.lead;
+    const secs = parts.article.map(s => {
+      const title = ru ? ruTitle(c, s) : s.title;
+      const inner = ru ? ruSection(c, s, 0, d) : `<div class="wk-body open" data-wkexpand>${bodyHtml(s.text, c.name).body}</div>${recordHtml(c, s)}`;
+      return `<details class="sj-mdet2 sj-csec${s.off ? ' off' : ''}" data-ck="${esc(s.id)}"${openC.has(s.id) ? ' open' : ''}><summary><span class="t">${esc(title)}</span><span class="r">${c.sectionTokens[s.id] ?? 0}</span>${tgBtn(s)}</summary><div class="in">${inner}</div></details>`;
+    }).join('');
+    const service = parts.service.map(x => recordHtml(c, x, { head: `Служебная запись: ${x.title}` })).join('');
+    const intimate = parts.intimate.length ? mdetC('nsfw', `Романтика и NSFW · ${parts.intimate.length}`, parts.intimate.map(x => recordHtml(c, x, { head: x.title })).join('')) : '';
+    const headEdit = editHead && !ru ? `<input class="sj-nm wk-nm" data-card-name value="${esc(c.name)}" aria-label="Имя">
+        <label class="wk-fl">Псевдонимы<input data-card-alias value="${esc(c.aliases.join(', '))}" placeholder="прозвища и формы имени через запятую"></label>
+        <label class="wk-fl">Подпись под именем<input data-wiki="tagline" value="${esc(w.tagline)}" placeholder="например: вампир-отпрыск"></label>
+        <label class="wk-fl">Вступление<textarea data-wiki="lead" rows="3" placeholder="${esc(w.derived.lead ? w.lead : 'коротко о персонаже')}">${esc(w.derived.lead ? '' : w.lead)}</textarea></label>
+        <div class="sj-add"><button class="sj-btn" data-act="${minor ? 'tomain' : 'tominor'}">${minor ? 'Сделать основным' : 'Сделать второстепенным'}</button><button class="sj-btn" data-act="addsec">+ запись</button></div>` : '';
+    const more = `<div class="sj-add" style="flex-direction:column;align-items:stretch">${info?.hasChat ? (dead ? '<button class="sj-btn" data-act="undie">Воскресить</button>' : '<button class="sj-btn" data-act="die">Отметить умершим</button>') : ''}
+        ${ru ? '' : `${c.source ? '<button class="sj-btn" data-act="reload">Обновить из лорбука</button>' : ''}<button class="sj-btn${editHead ? ' sj-pri' : ''}" data-act="edithead">${editHead ? 'Готово' : 'Править анкету'}</button>`}
+        ${c.image ? '<button class="sj-btn" data-act="noimg">Убрать фото</button>' : ''}<button class="sj-btn sj-del" data-act="delcard">Удалить анкету</button></div>${headEdit}`;
+    return `${hero}
+      <div class="sj-seg2"><button data-lang="en" aria-pressed="${!ru}">Оригинал</button><button data-lang="ru" aria-pressed="${ru}">Русский${c.ru ? '' : ' ·'}</button></div>
+      ${ru ? trBar(c, d, plan) : ''}${leadText ? `<p class="wk-lead">${esc(leadText)}</p>` : ''}
+      ${secs || '<div class="sj-none">Разделов нет.</div>'}${service}${intimate}
+      ${mdetC('more', 'Ещё', more)}
+      ${mdetC('sent', 'Что уходит рассказчику', footHtml(d))}`;
+  }
+
+  function renderMobile(d) {
+    const card = mCard ? d.cards.find(x => x.id === selected) : null;
+    if (mCard && !card) mCard = false;
+    const close = '<button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button>';
+    const head = card
+      ? `<div class="sj-wh"><button class="sj-btn sj-back" data-act="mback" aria-label="К списку">‹</button><h2>${esc(card.name)}</h2>${close}</div>`
+      : `<div class="sj-wh"><h2>Анкеты</h2>${close}<span class="sj-sub">${esc(note || d.note || 'персонажи из лорбуков')}</span></div>`;
+    win.innerHTML = `${head}<div class="sj-cmob">${importing ? (importing.minor ? minorHtml() : importHtml(d)) : ''}${card ? mobileCard(d) : mobileList(d)}</div>`;
+  }
+
   function render() {
     const d = cardsApi().get();
     const info = shared.scene?.get();
     shell.theme(info?.hasChat ? info.state.calendar : settings.calendar);
     const pool0 = shown(d);
     if (!pool0.some(c => c.id === selected)) selected = pool0[0]?.id ?? '';
+    if (isMobile()) { renderMobile(d); return; }
     win.innerHTML = `<div class="sj-wh"><h2>Анкеты</h2><span class="sj-sub">${esc(note || d.note || 'персонажи из лорбуков: разделы, фото, токены')}</span><button class="sj-btn sj-x" data-act="close" aria-label="Закрыть">×</button></div>
       ${importing ? (importing.minor ? minorHtml() : importHtml(d)) : ''}<div class="sj-jbody"><div class="sj-jside">${sideHtml(d)}</div><div class="sj-jpage">${pageHtml(d)}${footHtml(d)}</div></div>`;
   }
@@ -254,7 +330,7 @@ export function startCardsWindow(deps) {
   const onClick = async event => {
     const t = event.target;
     const tb = t.closest('[data-tier]'); if (tb) { tier = tb.dataset.tier; selected = ''; return render(); }
-    const row = t.closest('[data-card]'); if (row) { selected = row.dataset.card; editHead = false; ruEdit.clear(); return render(); }
+    const row = t.closest('[data-card]'); if (row) { selected = row.dataset.card; editHead = false; ruEdit.clear(); mCard = true; return render(); }
     const tg = t.closest('[data-tgsec]'); if (tg) { event.preventDefault(); const c = api().get().cards.find(x => x.id === selected); const s = c?.sections.find(x => x.id === tg.dataset.tgsec); if (s) api().setSection(selected, s.id, { off: !s.off }); return; }
     const orec = t.closest('[data-openrec]'); if (orec) { event.preventDefault(); openRecs.add(orec.dataset.openrec); render(); win.querySelector(`[data-rec="${CSS.escape(orec.dataset.openrec)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
     const exp = t.closest('[data-wkexpandbtn]'); if (exp) { event.preventDefault(); const box = exp.previousElementSibling; const on = box.classList.toggle('open'); exp.textContent = on ? 'свернуть' : 'показать целиком'; return; }
@@ -284,6 +360,7 @@ export function startCardsWindow(deps) {
       if (act === 'trstop') { api().stopTranslation(); note = 'Останавливаю после текущего блока…'; return render(); }
       if (act === 'trclear') { if (window.confirm('Удалить русскую версию этой анкеты, включая ваши правки перевода?')) { api().clearRu(selected); note = 'Перевод удалён'; } return; }
       if (act === 'close') return shell.close();
+      if (act === 'mback') { mCard = false; return render(); }
       if (act === 'new') { const name = window.prompt(tier === 'minor' ? 'Имя второстепенного персонажа' : 'Имя персонажа'); if (name) { const id = api().addCard(name, tier); if (id) { selected = id; } } return; }
       if (act === 'minor') { importing = { minor: true, found: null, pick: new Set(), error: '' }; render(); const found = await api().previewMinor(); importing = { minor: true, found, pick: new Set(found.filter(f => !f.exists).map(f => f.key)), error: '' }; return render(); }
       if (act === 'minorall') { importing.pick = new Set(importing.found.filter(f => !f.exists).map(f => f.key)); return render(); }
@@ -381,7 +458,7 @@ export function startCardsWindow(deps) {
   });
 
   function open() {
-    importing = null; note = '';
+    importing = null; note = ''; mCard = false;
     shell.show(shared.scene?.get()?.state?.calendar ?? settings.calendar);
     render();
     win.focus();
